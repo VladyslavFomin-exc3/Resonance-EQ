@@ -1,0 +1,25 @@
+# Build outputs
+/build/
+/**/build/
+/*_artefacts/
+/**/*_artefacts/
+
+# CMake generated
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+compile_commands.json
+
+# IDE
+.vs/
+.vscode/
+*.sln
+*.vcxproj*
+*.user
+*.filters
+*.opendb
+*.VC.db
+
+# OS junk
+.DS_Store
+Thumbs.db
