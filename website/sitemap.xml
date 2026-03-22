@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:xhtml="http://www.w3.org/1999/xhtml">
+  
+  <!-- Main Page -->
+  <url>
+    <loc>https://TODO-domain.com/</loc>
+    <lastmod>2024-03-22</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>1.0</priority>
+    
+    <!-- TODO: Add alternate link for Ukrainian version -->
+    <xhtml:link rel="alternate" hreflang="uk" href="https://TODO-domain.com/"/>
+    
+    <!-- TODO: Add link for English version if available -->
+    <!-- <xhtml:link rel="alternate" hreflang="en" href="https://TODO-domain.com/en/"/> -->
+  </url>
+  
+  <!-- Sections with anchor links (optional, for major sections) -->
+  <url>
+    <loc>https://TODO-domain.com/#thesis</loc>
+    <lastmod>2024-03-22</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  
+  <url>
+    <loc>https://TODO-domain.com/#objectives</loc>
+    <lastmod>2024-03-22</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  
+  <url>
+    <loc>https://TODO-domain.com/#methodology</loc>
+    <lastmod>2024-03-22</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  
+  <url>
+    <loc>https://TODO-domain.com/#results</loc>
+    <lastmod>2024-03-22</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  
+  <url>
+    <loc>https://TODO-domain.com/#contact</loc>
+    <lastmod>2024-03-22</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+</urlset>
