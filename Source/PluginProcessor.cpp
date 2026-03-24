@@ -35,7 +35,7 @@ ResonanceEQAudioProcessor::ResonanceEQAudioProcessor()
 
 ResonanceEQAudioProcessor::~ResonanceEQAudioProcessor() = default;
 
-const juce::String ResonanceEQAudioProcessor::getName() const
+juce::String ResonanceEQAudioProcessor::getName() const
 {
     return JucePlugin_Name;
 }
@@ -82,14 +82,21 @@ int ResonanceEQAudioProcessor::getCurrentProgram()
     return 0;
 }
 
-void ResonanceEQAudioProcessor::setCurrentProgram(int) {}
-
-const juce::String ResonanceEQAudioProcessor::getProgramName(int)
+void ResonanceEQAudioProcessor::setCurrentProgram(int index)
 {
+    juce::ignoreUnused(index);
+}
+
+juce::String ResonanceEQAudioProcessor::getProgramName(int index)
+{
+    juce::ignoreUnused(index);
     return {};
 }
 
-void ResonanceEQAudioProcessor::changeProgramName(int, const juce::String&) {}
+void ResonanceEQAudioProcessor::changeProgramName(int index, const juce::String& newName)
+{
+    juce::ignoreUnused(index, newName);
+}
 
 void ResonanceEQAudioProcessor::prepareToPlay(const double sampleRate, const int samplesPerBlock)
 {
@@ -132,10 +139,14 @@ bool ResonanceEQAudioProcessor::isBusesLayoutSupported(const BusesLayout& layout
 #else
     if (layouts.getMainOutputChannelSet() != juce::AudioChannelSet::mono() &&
         layouts.getMainOutputChannelSet() != juce::AudioChannelSet::stereo())
+    {
         return false;
+    }
 
     if (layouts.getMainOutputChannelSet() != layouts.getMainInputChannelSet())
+    {
         return false;
+    }
 
     return true;
 #endif
@@ -152,14 +163,20 @@ void ResonanceEQAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,
     const auto totalNumOutputChannels = getTotalNumOutputChannels();
 
     for (auto i = totalNumInputChannels; i < totalNumOutputChannels; ++i)
+    {
         buffer.clear(i, 0, buffer.getNumSamples());
+    }
 
     bool bypassed = false;
     if (auto* param = parameters.getRawParameterValue(bypassParam))
+    {
         bypassed = param->load() >= 0.5f;
+    }
 
     if (bypassed)
+    {
         return;
+    }
 
     float amount = 0.0f;
     if (auto* param = parameters.getRawParameterValue(amountParam))
@@ -264,7 +281,9 @@ void ResonanceEQAudioProcessor::getStateInformation(juce::MemoryBlock& destData)
     const auto state = parameters.copyState();
 
     if (const auto xml = state.createXml())
+    {
         copyXmlToBinary(*xml, destData);
+    }
 }
 
 void ResonanceEQAudioProcessor::setStateInformation(const void* data, const int sizeInBytes)
