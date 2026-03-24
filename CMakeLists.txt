@@ -6,6 +6,8 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Enable compilation database for clang-tidy and other tools
+# Note: Not all generators (e.g. Visual Studio) always produce compile_commands.json.
+# For best results use Ninja generator (build_ninja) or xcode/ninja multi-config.
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 # Setup clang-tidy integration if available

@@ -4,8 +4,13 @@ Checks: >
   performance-*,
   readability-*,
   modernize-*,-readability-magic-numbers,
+  -readability-convert-member-functions-to-static,
+  -readability-identifier-length,
+  -readability-uppercase-literal-suffix,
+  -bugprone-easily-swappable-parameters,
   -modernize-use-trailing-return-type,
+  -modernize-use-equals-default,
   -cppcoreguidelines-avoid-magic-numbers
 WarningsAsErrors: ''
-HeaderFilterRegex: 'Source/.*'
+HeaderFilterRegex: '^(Source|Source/Dsp)/.*$'
 FormatStyle: file

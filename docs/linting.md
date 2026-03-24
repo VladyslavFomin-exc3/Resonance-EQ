@@ -43,18 +43,20 @@ clang-format --dry-run --Werror --style=file Source/**/*.cpp Source/**/*.h
 ```
 
 ### clang-tidy
-Build first if necessary:
+Build first if necessary and ensure a compilation database exists.
+Visual Studio generator may not produce `compile_commands.json` reliably for clang-tidy, so use Ninja if available:
 ```bat
-mkdir build
-cd build
-cmake .. -G "Visual Studio 17 2022"
-cmake --build . --config Release
+mkdir build_ninja
+cd build_ninja
+cmake .. -G "Ninja" -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+cmake --build .
 ```
-Then:
+Verify `build_ninja\compile_commands.json` exists, then run:
 ```bat
-cd build
-clang-tidy -p . "../Source/**/*.cpp" --warnings-as-errors=* --config-file=../.clang-tidy
+cd ..
+clang-tidy -p build_ninja "Source\*.cpp" --config-file=.clang-tidy
 ```
+If you must use Visual Studio generator, run the same with `-DCMAKE_EXPORT_COMPILE_COMMANDS=ON` and set up clang-tidy to consume the generated database location.
 
 ### cppcheck
 ```bat
@@ -91,4 +93,9 @@ scripts\run_checks.bat
 or PowerShell:
 ```powershell
 scripts\run_checks.ps1
+```
+
+If `build\compile_commands.json` is not present, `scripts\run_checks.bat` will attempt to configure a Ninja build with compile commands. If Ninja is not installed, it will fall back to `cmake --build` with `CMAKE_CXX_CLANG_TIDY` integration in CMakeLists. For reliable `clang-tidy -p`, install Ninja and run:
+```bat
+cmake -S . -B build_ninja -G "Ninja" -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
 ```
