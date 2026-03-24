@@ -14,9 +14,19 @@ jobs:
     - name: Install CMake
       uses: lukka/get-cmake@latest
 
-    - name: Build
+    - name: Build Debug
       run: |
         mkdir build
         cd build
         cmake .. -G "Visual Studio 17 2022"
-        cmake --build . --config Release
+        cmake --build . --config Debug
+
+    - name: Build Release
+      run: |
+        cmake --build build --config Release
+
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: ResonanceEQ-artifacts
+        path: build/ResonanceEQ_artefacts/

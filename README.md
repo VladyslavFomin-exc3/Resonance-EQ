@@ -2,6 +2,10 @@
 
 VST3 audio plugin for spectral equalization with a random resonance engine.
 
+## Architecture
+
+This is a VST3 audio plugin that runs within a host application (DAW). The plugin processes audio in real-time and provides a user interface for parameter control.
+
 ## Requirements
 
 - Git
@@ -49,8 +53,8 @@ cmake --build build --config Debug
 ## Output Location
 
 The built VST3 plugin is located at:
-- Release: `build/ResonanceEQ_artefacts/Release/VST3/ResonanceEQ.vst3`
-- Debug: `build/ResonanceEQ_artefacts/Debug/VST3/ResonanceEQ.vst3`
+- Release: `build/ResonanceEQ_artefacts/Release/VST3/Harmonic Resonance EQ.vst3`
+- Debug: `build/ResonanceEQ_artefacts/Debug/VST3/Harmonic Resonance EQ.vst3`
 
 ## Installation
 
@@ -73,6 +77,35 @@ The built VST3 plugin is located at:
 - Build Release: `cmake --build build --config Release`
 - Build Debug: `cmake --build build --config Debug`
 - Clean: `cmake --build build --target clean`
+
+## Repository Structure
+
+- `CMakeLists.txt`: Main build configuration
+- `Source/`: Plugin source code
+  - `PluginProcessor.cpp/h`: Audio processing logic
+  - `PluginEditor.cpp/h`: User interface
+  - `Dsp/`: DSP algorithms
+- `JUCE/`: JUCE framework submodule
+- `build/`: Build artifacts (ignored)
+- `docs/`: Documentation
+- `scripts/`: Automation scripts
+- `website/`: Project website
+
+## Troubleshooting
+
+### Build fails
+- Ensure Visual Studio 2022 is installed with C++ workload
+- Check CMake version >= 3.22
+- Run `git submodule update --init --recursive`
+
+### Plugin not found in DAW
+- Verify installation path: `C:\Program Files\Common Files\VST3`
+- Rescan plugins in DAW
+- Check for .vst3 file existence
+
+### Audio issues
+- Ensure sample rate compatibility
+- Check buffer sizes
 
 ## Notes
 

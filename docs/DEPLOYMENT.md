@@ -13,6 +13,18 @@
 - CMake 3.15+
 - JUCE framework
 
+## Network Requirements
+
+Not applicable - plugin runs locally without network connectivity.
+
+## Server Configuration
+
+Not applicable - no server component exists for this desktop plugin.
+
+## Database Configuration
+
+Not applicable - no database is used in this project.
+
 ## Deployment Steps
 
 1. Build the project in Release configuration:
@@ -22,7 +34,7 @@
 
 2. Locate the VST3 plugin file:
    ```
-   build/ResonanceEQ_artefacts/Release/VST3/ResonanceEQ.vst3
+   build/ResonanceEQ_artefacts/Release/VST3/Harmonic Resonance EQ.vst3
    ```
 
 3. Copy the `.vst3` file to the VST3 plugin directory:
@@ -38,5 +50,3 @@
 2. Scan for new plugins or refresh the plugin list.
 3. Add ResonanceEQ to a track.
 4. Verify the plugin loads and the interface appears.
-
-No network configuration is required.

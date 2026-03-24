@@ -1,0 +1,38 @@
+name: Release Package
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  package:
+    runs-on: windows-latest
+
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        submodules: recursive
+
+    - name: Install CMake
+      uses: lukka/get-cmake@latest
+
+    - name: Build Release
+      run: |
+        mkdir build
+        cd build
+        cmake .. -G "Visual Studio 17 2022"
+        cmake --build . --config Release
+
+    - name: Package
+      run: |
+        mkdir release
+        xcopy /e /i /y "build\ResonanceEQ_artefacts\Release\VST3\Harmonic Resonance EQ.vst3" "release\Harmonic Resonance EQ.vst3\"
+        if exist README.md copy README.md release\
+        if exist LICENSE copy LICENSE release\
+
+    - name: Upload release
+      uses: actions/upload-artifact@v3
+      with:
+        name: ResonanceEQ-release-${{ github.ref_name }}
+        path: release/
