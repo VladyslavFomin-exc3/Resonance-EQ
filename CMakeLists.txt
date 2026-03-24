@@ -5,6 +5,16 @@ project(ResonanceEQ VERSION 0.1.0)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# Enable compilation database for clang-tidy and other tools
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
+# Setup clang-tidy integration if available
+find_program(CLANG_TIDY_EXE NAMES clang-tidy)
+if(CLANG_TIDY_EXE)
+    message(STATUS "Found clang-tidy: ${CLANG_TIDY_EXE}")
+    set(CMAKE_CXX_CLANG_TIDY "${CLANG_TIDY_EXE};-format-style=file")
+endif()
+
 add_subdirectory(JUCE)
 
 juce_add_plugin(ResonanceEQ
@@ -63,4 +73,17 @@ target_link_libraries(ResonanceEQ
         juce::juce_recommended_lto_flags
         juce::juce_recommended_warning_flags
 )
+
+# Optional static analysis target (requires cppcheck installed)
+find_program(CPPCHECK_EXE NAMES cppcheck)
+if(CPPCHECK_EXE)
+    add_custom_target(cppcheck
+        COMMAND ${CPPCHECK_EXE} --enable=warning,performance,portability --std=c++17 --quiet
+                --project=${CMAKE_BINARY_DIR}/compile_commands.json
+                --template=gcc
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+        COMMENT "Running cppcheck static analysis"
+        VERBATIM
+    )
+endif()
 

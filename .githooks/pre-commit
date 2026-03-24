@@ -1,0 +1,22 @@
+#!/bin/sh
+
+# Pre-commit hook for linting and static analysis
+# Note: enable with `git config core.hooksPath .githooks`.
+
+echo "Running pre-commit checks..."
+
+# clang-format check
+if ! command -v clang-format >/dev/null 2>&1; then
+  echo "clang-format not found. Please install clang-format."
+  exit 1
+fi
+
+# Run formatting check
+./scripts/run_checks.bat
+status=$?
+if [ $status -ne 0 ]; then
+  echo "Pre-commit checks failed. Commit aborted."
+  exit $status
+fi
+
+exit 0

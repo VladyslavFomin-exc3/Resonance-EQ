@@ -6,19 +6,18 @@
 #include "Dsp/ResonanceEngine.h"
 #include "Dsp/SafetyLimiter.h"
 
-class ResonanceEQAudioProcessor final : public juce::AudioProcessor,
-                                        private juce::AsyncUpdater
+class ResonanceEQAudioProcessor final : public juce::AudioProcessor, private juce::AsyncUpdater
 {
-public:
+  public:
     ResonanceEQAudioProcessor();
     ~ResonanceEQAudioProcessor() override;
 
     void prepareToPlay(double sampleRate, int samplesPerBlock) override;
     void releaseResources() override;
 
-   #if ! JucePlugin_IsMidiEffect
+#if !JucePlugin_IsMidiEffect
     bool isBusesLayoutSupported(const BusesLayout& layouts) const override;
-   #endif
+#endif
 
     void processBlock(juce::AudioBuffer<float>&, juce::MidiBuffer&) override;
 
@@ -45,12 +44,12 @@ public:
 
     juce::AudioProcessorValueTreeState parameters;
 
-private:
+  private:
     void handleAsyncUpdate() override;
     float readBpm() const;
     void updateEqTargetsFromParameters();
 
-    std::atomic<bool> rerollPending { false };
+    std::atomic<bool> rerollPending{false};
     bool rerollButtonWasDown = false;
 
     int lastSeed = 12345;

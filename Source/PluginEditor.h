@@ -1,11 +1,11 @@
 #pragma once
 
-#include <JuceHeader.h>
 #include "PluginProcessor.h"
+#include <JuceHeader.h>
 
 class ResonanceEQAudioProcessorEditor final : public juce::GenericAudioProcessorEditor
 {
-public:
+  public:
     explicit ResonanceEQAudioProcessorEditor(ResonanceEQAudioProcessor& p)
         : juce::GenericAudioProcessorEditor(p)
     {

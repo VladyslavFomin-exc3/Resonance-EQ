@@ -4,11 +4,11 @@
 
 class SafetyLimiter
 {
-public:
+  public:
     void prepare(const juce::dsp::ProcessSpec& spec);
     void reset();
     void processBlock(juce::AudioBuffer<float>& buffer);
 
-private:
+  private:
     juce::dsp::Limiter<float> limiter;
 };

@@ -7,7 +7,7 @@
 
 class ResonanceEngine
 {
-public:
+  public:
     static constexpr int maxResonances = 12;
 
     struct Params
@@ -27,12 +27,13 @@ public:
     void prepare(const juce::dsp::ProcessSpec& spec);
     void reset();
 
-    void setSeed(int newSeed);
+    void setSeed(const int newSeed);
     void setParameters(const Params& newParams);
     void processBlock(juce::AudioBuffer<float>& buffer);
 
-private:
-    using Filter = juce::dsp::ProcessorDuplicator<juce::dsp::IIR::Filter<float>, juce::dsp::IIR::Coefficients<float>>;
+  private:
+    using Filter = juce::dsp::ProcessorDuplicator<juce::dsp::IIR::Filter<float>,
+                                                  juce::dsp::IIR::Coefficients<float>>;
 
     void updateControlTicks(int numSamples);
     void triggerNewTargets();
@@ -47,7 +48,7 @@ private:
     Params params;
 
     int currentSeed = 12345;
-    std::mt19937 prng { static_cast<std::mt19937::result_type> (currentSeed) };
+    std::mt19937 prng{static_cast<std::mt19937::result_type>(currentSeed)};
 
     int samplesUntilTick = 0;
     int effectiveCount = 2;
@@ -55,11 +56,14 @@ private:
     float effectiveMotion = 0.0f;
     float shapedRandomness = 0.0f;
 
-    std::array<bool, maxResonances> initialized {};
-    std::array<float, maxResonances> lastFreqHz {};
+    std::array<bool, maxResonances> initialized{};
+    std::array<float, maxResonances> lastFreqHz{};
 
     std::array<Filter, maxResonances> filters;
-    std::array<juce::SmoothedValue<float, juce::ValueSmoothingTypes::Multiplicative>, maxResonances> freqSmoothed;
-    std::array<juce::SmoothedValue<float, juce::ValueSmoothingTypes::Linear>, maxResonances> gainDbSmoothed;
-    std::array<juce::SmoothedValue<float, juce::ValueSmoothingTypes::Multiplicative>, maxResonances> qSmoothed;
+    std::array<juce::SmoothedValue<float, juce::ValueSmoothingTypes::Multiplicative>, maxResonances>
+        freqSmoothed;
+    std::array<juce::SmoothedValue<float, juce::ValueSmoothingTypes::Linear>, maxResonances>
+        gainDbSmoothed;
+    std::array<juce::SmoothedValue<float, juce::ValueSmoothingTypes::Multiplicative>, maxResonances>
+        qSmoothed;
 };

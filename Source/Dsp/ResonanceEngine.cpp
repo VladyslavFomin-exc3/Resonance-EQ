@@ -12,7 +12,7 @@ constexpr float minQ = 0.9f;
 constexpr float maxQ = 14.0f;
 constexpr float minGainDb = 0.0f;
 constexpr float maxGainDbAbsolute = 12.0f;
-}
+} // namespace
 
 void ResonanceEngine::prepare(const juce::dsp::ProcessSpec& spec)
 {
@@ -30,7 +30,8 @@ void ResonanceEngine::prepare(const juce::dsp::ProcessSpec& spec)
         lastFreqHz[i] = 300.0f + 40.0f * static_cast<float>(i);
 
         filters[i].prepare(spec);
-        *filters[i].state = *juce::dsp::IIR::Coefficients<float>::makePeakFilter(sampleRate, 1000.0f, 1.0f, 1.0f);
+        *filters[i].state =
+            *juce::dsp::IIR::Coefficients<float>::makePeakFilter(sampleRate, 1000.0f, 1.0f, 1.0f);
     }
 
     samplesUntilTick = 0;
@@ -62,15 +63,24 @@ void ResonanceEngine::setParameters(const Params& newParams)
 {
     params = newParams;
 
-    shapedRandomness = hreq::util::smoothstep(hreq::util::clampFloat(params.randomness, 0.0f, 1.0f));
+    shapedRandomness =
+        hreq::util::smoothstep(hreq::util::clampFloat(params.randomness, 0.0f, 1.0f));
 
     const auto countMaxClamped = hreq::util::clampInt(params.countMax, 1, maxResonances);
     const auto countMinFixed = (countMaxClamped < 2 ? 1 : 2);
     effectiveCount = juce::jlimit(1, maxResonances,
-                                  static_cast<int>(std::round(hreq::util::lerp(static_cast<float>(countMinFixed), static_cast<float>(countMaxClamped), shapedRandomness))));
+                                  static_cast<int>(std::round(hreq::util::lerp(
+                                      static_cast<float>(countMinFixed),
+                                      static_cast<float>(countMaxClamped), shapedRandomness))));
 
-    effectiveQ = hreq::util::clampFloat(hreq::util::logLerp(minQ, hreq::util::clampFloat(params.qMax, minQ, maxQ), shapedRandomness), minQ, maxQ);
-    effectiveMotion = hreq::util::clampFloat(hreq::util::lerp(0.0f, hreq::util::clampFloat(params.motionMax, 0.0f, 1.0f), shapedRandomness), 0.0f, 1.0f);
+    effectiveQ = hreq::util::clampFloat(
+        hreq::util::logLerp(minQ, hreq::util::clampFloat(params.qMax, minQ, maxQ),
+                            shapedRandomness),
+        minQ, maxQ);
+    effectiveMotion = hreq::util::clampFloat(
+        hreq::util::lerp(0.0f, hreq::util::clampFloat(params.motionMax, 0.0f, 1.0f),
+                         shapedRandomness),
+        0.0f, 1.0f);
 }
 
 void ResonanceEngine::processBlock(juce::AudioBuffer<float>& buffer)
@@ -112,8 +122,10 @@ void ResonanceEngine::updateControlTicks(const int numSamples)
 
 void ResonanceEngine::triggerNewTargets()
 {
-    const auto maxBoostDb = juce::jlimit(3.0f, 9.0f, hreq::util::lerp(3.0f, 9.0f, shapedRandomness));
-    const auto jumpOctaves = hreq::util::lerp(0.06f, 2.3f, shapedRandomness) * juce::jmax(0.1f, effectiveMotion);
+    const auto maxBoostDb =
+        juce::jlimit(3.0f, 9.0f, hreq::util::lerp(3.0f, 9.0f, shapedRandomness));
+    const auto jumpOctaves =
+        hreq::util::lerp(0.06f, 2.3f, shapedRandomness) * juce::jmax(0.1f, effectiveMotion);
 
     for (auto i = 0; i < maxResonances; ++i)
     {
@@ -126,7 +138,7 @@ void ResonanceEngine::triggerNewTargets()
 
         float frequency = lastFreqHz[i];
 
-        if (! initialized[i])
+        if (!initialized[i])
         {
             frequency = hreq::util::logLerp(minFreq, maxFreq, nextRandom01());
             initialized[i] = true;
@@ -145,7 +157,8 @@ void ResonanceEngine::triggerNewTargets()
         if (frequency > 2000.0f && frequency < 6000.0f)
             localMaxBoost *= 0.6f;
 
-        const auto gainTarget = hreq::util::clampFloat(localMaxBoost * nextRandom01(), minGainDb, maxGainDbAbsolute);
+        const auto gainTarget =
+            hreq::util::clampFloat(localMaxBoost * nextRandom01(), minGainDb, maxGainDbAbsolute);
         const auto qVariation = hreq::util::lerp(0.9f, 1.15f, nextRandom01());
 
         freqSmoothed[i].setTargetValue(frequency);
@@ -158,11 +171,14 @@ void ResonanceEngine::updateCoefficients(const int numSamples)
 {
     for (auto i = 0; i < maxResonances; ++i)
     {
-        const auto frequency = hreq::util::clampFloat(freqSmoothed[i].skip(numSamples), minFreq, maxFreq);
-        const auto gainDb = hreq::util::clampFloat(gainDbSmoothed[i].skip(numSamples), minGainDb, maxGainDbAbsolute);
+        const auto frequency =
+            hreq::util::clampFloat(freqSmoothed[i].skip(numSamples), minFreq, maxFreq);
+        const auto gainDb = hreq::util::clampFloat(gainDbSmoothed[i].skip(numSamples), minGainDb,
+                                                   maxGainDbAbsolute);
         const auto qValue = hreq::util::clampFloat(qSmoothed[i].skip(numSamples), minQ, maxQ);
 
-        *filters[i].state = *juce::dsp::IIR::Coefficients<float>::makePeakFilter(sampleRate, frequency, qValue, juce::Decibels::decibelsToGain(gainDb));
+        *filters[i].state = *juce::dsp::IIR::Coefficients<float>::makePeakFilter(
+            sampleRate, frequency, qValue, juce::Decibels::decibelsToGain(gainDb));
     }
 }
 
@@ -170,7 +186,8 @@ float ResonanceEngine::computeRateHz() const
 {
     if (params.rateMode == 0)
     {
-        const auto baseSeconds = noteToSeconds(params.syncNote, hreq::util::clampFloat(params.bpm, 20.0f, 300.0f));
+        const auto baseSeconds =
+            noteToSeconds(params.syncNote, hreq::util::clampFloat(params.bpm, 20.0f, 300.0f));
         const auto minSeconds = juce::jmax(0.02f, baseSeconds * 0.25f);
         const auto maxSeconds = juce::jmax(minSeconds, baseSeconds * 4.0f);
         const auto seconds = hreq::util::lerp(maxSeconds, minSeconds, shapedRandomness);
@@ -188,12 +205,23 @@ float ResonanceEngine::noteToSeconds(const int noteIndex, const float bpm) const
     float ratio = 1.0f;
     switch (noteIndex)
     {
-        case 0: ratio = 4.0f; break; // 1/1
-        case 1: ratio = 2.0f; break; // 1/2
-        case 2: ratio = 1.0f; break; // 1/4
-        case 3: ratio = 0.5f; break; // 1/8
-        case 4: ratio = 0.25f; break; // 1/16
-        default: break;
+    case 0:
+        ratio = 4.0f;
+        break; // 1/1
+    case 1:
+        ratio = 2.0f;
+        break; // 1/2
+    case 2:
+        ratio = 1.0f;
+        break; // 1/4
+    case 3:
+        ratio = 0.5f;
+        break; // 1/8
+    case 4:
+        ratio = 0.25f;
+        break; // 1/16
+    default:
+        break;
     }
 
     float seconds = quarter * ratio;

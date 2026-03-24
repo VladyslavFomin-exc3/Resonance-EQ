@@ -1,7 +1,7 @@
 #include "PluginProcessor.h"
 
-#include "PluginEditor.h"
 #include "Dsp/Utilities.h"
+#include "PluginEditor.h"
 
 #include <array>
 #include <random>
@@ -23,11 +23,12 @@ constexpr auto syncTripletParam = "syncTriplet";
 constexpr auto freeHzMaxParam = "freeHzMax";
 constexpr auto seedParam = "seed";
 constexpr auto rerollParam = "reroll";
-}
+} // namespace
 
 ResonanceEQAudioProcessor::ResonanceEQAudioProcessor()
-    : AudioProcessor(BusesProperties().withInput("Input", juce::AudioChannelSet::stereo(), true)
-                                      .withOutput("Output", juce::AudioChannelSet::stereo(), true)),
+    : AudioProcessor(BusesProperties()
+                         .withInput("Input", juce::AudioChannelSet::stereo(), true)
+                         .withOutput("Output", juce::AudioChannelSet::stereo(), true)),
       parameters(*this, nullptr, "PARAMETERS", createParameterLayout())
 {
 }
@@ -41,29 +42,29 @@ const juce::String ResonanceEQAudioProcessor::getName() const
 
 bool ResonanceEQAudioProcessor::acceptsMidi() const
 {
-   #if JucePlugin_WantsMidiInput
+#if JucePlugin_WantsMidiInput
     return true;
-   #else
+#else
     return false;
-   #endif
+#endif
 }
 
 bool ResonanceEQAudioProcessor::producesMidi() const
 {
-   #if JucePlugin_ProducesMidiOutput
+#if JucePlugin_ProducesMidiOutput
     return true;
-   #else
+#else
     return false;
-   #endif
+#endif
 }
 
 bool ResonanceEQAudioProcessor::isMidiEffect() const
 {
-   #if JucePlugin_IsMidiEffect
+#if JucePlugin_IsMidiEffect
     return true;
-   #else
+#else
     return false;
-   #endif
+#endif
 }
 
 double ResonanceEQAudioProcessor::getTailLengthSeconds() const
@@ -81,25 +82,22 @@ int ResonanceEQAudioProcessor::getCurrentProgram()
     return 0;
 }
 
-void ResonanceEQAudioProcessor::setCurrentProgram(int)
-{
-}
+void ResonanceEQAudioProcessor::setCurrentProgram(int) {}
 
 const juce::String ResonanceEQAudioProcessor::getProgramName(int)
 {
     return {};
 }
 
-void ResonanceEQAudioProcessor::changeProgramName(int, const juce::String&)
-{
-}
+void ResonanceEQAudioProcessor::changeProgramName(int, const juce::String&) {}
 
 void ResonanceEQAudioProcessor::prepareToPlay(const double sampleRate, const int samplesPerBlock)
 {
     juce::dsp::ProcessSpec spec;
     spec.sampleRate = sampleRate;
     spec.maximumBlockSize = static_cast<juce::uint32>(juce::jmax(1, samplesPerBlock));
-    spec.numChannels = static_cast<juce::uint32>(juce::jmax(getTotalNumInputChannels(), getTotalNumOutputChannels()));
+    spec.numChannels = static_cast<juce::uint32>(
+        juce::jmax(getTotalNumInputChannels(), getTotalNumOutputChannels()));
 
     eqCurve.prepare(spec);
     resonanceEngine.prepare(spec);
@@ -118,34 +116,34 @@ void ResonanceEQAudioProcessor::prepareToPlay(const double sampleRate, const int
     resonanceEngine.reset();
     limiter.reset();
 
-    lastSeed = juce::jlimit(0, std::numeric_limits<int>::max(), static_cast<int>(parameters.getRawParameterValue(seedParam)->load()));
+    lastSeed = juce::jlimit(0, std::numeric_limits<int>::max(),
+                            static_cast<int>(parameters.getRawParameterValue(seedParam)->load()));
     resonanceEngine.setSeed(lastSeed);
 }
 
-void ResonanceEQAudioProcessor::releaseResources()
-{
-}
+void ResonanceEQAudioProcessor::releaseResources() {}
 
-#if ! JucePlugin_IsMidiEffect
+#if !JucePlugin_IsMidiEffect
 bool ResonanceEQAudioProcessor::isBusesLayoutSupported(const BusesLayout& layouts) const
 {
-   #if JucePlugin_IsSynth
+#if JucePlugin_IsSynth
     juce::ignoreUnused(layouts);
     return true;
-   #else
-    if (layouts.getMainOutputChannelSet() != juce::AudioChannelSet::mono()
-        && layouts.getMainOutputChannelSet() != juce::AudioChannelSet::stereo())
+#else
+    if (layouts.getMainOutputChannelSet() != juce::AudioChannelSet::mono() &&
+        layouts.getMainOutputChannelSet() != juce::AudioChannelSet::stereo())
         return false;
 
     if (layouts.getMainOutputChannelSet() != layouts.getMainInputChannelSet())
         return false;
 
     return true;
-   #endif
+#endif
 }
 #endif
 
-void ResonanceEQAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages)
+void ResonanceEQAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,
+                                             juce::MidiBuffer& midiMessages)
 {
     juce::ignoreUnused(midiMessages);
     juce::ScopedNoDenormals noDenormals;
@@ -156,16 +154,28 @@ void ResonanceEQAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, j
     for (auto i = totalNumInputChannels; i < totalNumOutputChannels; ++i)
         buffer.clear(i, 0, buffer.getNumSamples());
 
-    const auto bypassed = parameters.getRawParameterValue(bypassParam)->load() >= 0.5f;
+    bool bypassed = false;
+    if (auto* param = parameters.getRawParameterValue(bypassParam))
+        bypassed = param->load() >= 0.5f;
 
     if (bypassed)
         return;
 
-    const auto amount = hreq::util::clampFloat(parameters.getRawParameterValue(amountParam)->load(), 0.0f, 1.0f);
-    const auto order = static_cast<int>(parameters.getRawParameterValue(orderParam)->load());
-    const auto outputGainDb = hreq::util::clampFloat(parameters.getRawParameterValue(outputGainParam)->load(), -24.0f, 12.0f);
+    float amount = 0.0f;
+    if (auto* param = parameters.getRawParameterValue(amountParam))
+        amount = hreq::util::clampFloat(param->load(), 0.0f, 1.0f);
 
-    const auto rerollDown = (parameters.getRawParameterValue(rerollParam)->load() >= 0.5f);
+    int order = 0;
+    if (auto* param = parameters.getRawParameterValue(orderParam))
+        order = static_cast<int>(param->load());
+
+    float outputGainDb = 0.0f;
+    if (auto* param = parameters.getRawParameterValue(outputGainParam))
+        outputGainDb = hreq::util::clampFloat(param->load(), -24.0f, 12.0f);
+
+    bool rerollDown = false;
+    if (auto* param = parameters.getRawParameterValue(rerollParam))
+        rerollDown = (param->load() >= 0.5f);
     if (rerollDown && !rerollButtonWasDown)
     {
         rerollPending.store(true);
@@ -173,7 +183,9 @@ void ResonanceEQAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, j
     }
     rerollButtonWasDown = rerollDown;
 
-    const auto seedNow = juce::jlimit(0, std::numeric_limits<int>::max(), static_cast<int>(parameters.getRawParameterValue(seedParam)->load()));
+    int seedNow = lastSeed;
+    if (auto* param = parameters.getRawParameterValue(seedParam))
+        seedNow = juce::jlimit(0, std::numeric_limits<int>::max(), static_cast<int>(param->load()));
     if (seedNow != lastSeed)
     {
         lastSeed = seedNow;
@@ -183,15 +195,34 @@ void ResonanceEQAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, j
     updateEqTargetsFromParameters();
 
     ResonanceEngine::Params resonanceParams;
-    resonanceParams.randomness = parameters.getRawParameterValue(randomnessParam)->load();
-    resonanceParams.countMax = static_cast<int>(parameters.getRawParameterValue(countMaxParam)->load());
-    resonanceParams.qMax = parameters.getRawParameterValue(qMaxParam)->load();
-    resonanceParams.motionMax = parameters.getRawParameterValue(motionMaxParam)->load();
-    resonanceParams.rateMode = static_cast<int>(parameters.getRawParameterValue(rateModeParam)->load());
-    resonanceParams.syncNote = static_cast<int>(parameters.getRawParameterValue(syncNoteParam)->load());
-    resonanceParams.syncDotted = parameters.getRawParameterValue(syncDottedParam)->load() >= 0.5f;
-    resonanceParams.syncTriplet = parameters.getRawParameterValue(syncTripletParam)->load() >= 0.5f;
-    resonanceParams.freeHzMax = parameters.getRawParameterValue(freeHzMaxParam)->load();
+    if (auto* param = parameters.getRawParameterValue(randomnessParam))
+        resonanceParams.randomness = param->load();
+    int countMax = 1;
+    if (auto* param = parameters.getRawParameterValue(countMaxParam))
+        countMax = static_cast<int>(param->load());
+    resonanceParams.countMax = countMax;
+    if (auto* param = parameters.getRawParameterValue(qMaxParam))
+        resonanceParams.qMax = param->load();
+    if (auto* param = parameters.getRawParameterValue(motionMaxParam))
+        resonanceParams.motionMax = param->load();
+    int rateMode = 0;
+    if (auto* param = parameters.getRawParameterValue(rateModeParam))
+        rateMode = static_cast<int>(param->load());
+    resonanceParams.rateMode = rateMode;
+    int syncNote = 0;
+    if (auto* param = parameters.getRawParameterValue(syncNoteParam))
+        syncNote = static_cast<int>(param->load());
+    resonanceParams.syncNote = syncNote;
+    bool syncDotted = false;
+    if (auto* param = parameters.getRawParameterValue(syncDottedParam))
+        syncDotted = param->load() >= 0.5f;
+    resonanceParams.syncDotted = syncDotted;
+    bool syncTriplet = false;
+    if (auto* param = parameters.getRawParameterValue(syncTripletParam))
+        syncTriplet = param->load() >= 0.5f;
+    resonanceParams.syncTriplet = syncTriplet;
+    if (auto* param = parameters.getRawParameterValue(freeHzMaxParam))
+        resonanceParams.freeHzMax = param->load();
     resonanceParams.bpm = readBpm();
     resonanceEngine.setParameters(resonanceParams);
 
@@ -244,53 +275,73 @@ void ResonanceEQAudioProcessor::setStateInformation(const void* data, const int 
             parameters.replaceState(juce::ValueTree::fromXml(*xml));
     }
 
-    lastSeed = juce::jlimit(0, std::numeric_limits<int>::max(), static_cast<int>(parameters.getRawParameterValue(seedParam)->load()));
+    lastSeed = juce::jlimit(0, std::numeric_limits<int>::max(),
+                            static_cast<int>(parameters.getRawParameterValue(seedParam)->load()));
     resonanceEngine.setSeed(lastSeed);
 }
 
-juce::AudioProcessorValueTreeState::ParameterLayout ResonanceEQAudioProcessor::createParameterLayout()
+juce::AudioProcessorValueTreeState::ParameterLayout
+ResonanceEQAudioProcessor::createParameterLayout()
 {
     std::vector<std::unique_ptr<juce::RangedAudioParameter>> params;
 
-    params.push_back(std::make_unique<juce::AudioParameterFloat>(amountParam, "Amount", juce::NormalisableRange<float>(0.0f, 1.0f), 0.5f));
-    params.push_back(std::make_unique<juce::AudioParameterFloat>(randomnessParam, "Randomness", juce::NormalisableRange<float>(0.0f, 1.0f), 0.25f));
-    params.push_back(std::make_unique<juce::AudioParameterChoice>(orderParam, "Order", juce::StringArray { "EQ->Res", "Res->EQ" }, 0));
-    params.push_back(std::make_unique<juce::AudioParameterFloat>(outputGainParam, "Output Gain", juce::NormalisableRange<float>(-24.0f, 12.0f), 0.0f));
+    params.push_back(std::make_unique<juce::AudioParameterFloat>(
+        amountParam, "Amount", juce::NormalisableRange<float>(0.0f, 1.0f), 0.5f));
+    params.push_back(std::make_unique<juce::AudioParameterFloat>(
+        randomnessParam, "Randomness", juce::NormalisableRange<float>(0.0f, 1.0f), 0.25f));
+    params.push_back(std::make_unique<juce::AudioParameterChoice>(
+        orderParam, "Order", juce::StringArray{"EQ->Res", "Res->EQ"}, 0));
+    params.push_back(std::make_unique<juce::AudioParameterFloat>(
+        outputGainParam, "Output Gain", juce::NormalisableRange<float>(-24.0f, 12.0f), 0.0f));
     params.push_back(std::make_unique<juce::AudioParameterBool>(bypassParam, "Bypass", false));
 
-    params.push_back(std::make_unique<juce::AudioParameterInt>(countMaxParam, "Count Max", 1, 12, 8));
-    params.push_back(std::make_unique<juce::AudioParameterFloat>(qMaxParam, "Q Max", juce::NormalisableRange<float>(0.7f, 14.0f), 10.0f));
-    params.push_back(std::make_unique<juce::AudioParameterFloat>(motionMaxParam, "Motion Max", juce::NormalisableRange<float>(0.0f, 1.0f), 0.6f));
+    params.push_back(
+        std::make_unique<juce::AudioParameterInt>(countMaxParam, "Count Max", 1, 12, 8));
+    params.push_back(std::make_unique<juce::AudioParameterFloat>(
+        qMaxParam, "Q Max", juce::NormalisableRange<float>(0.7f, 14.0f), 10.0f));
+    params.push_back(std::make_unique<juce::AudioParameterFloat>(
+        motionMaxParam, "Motion Max", juce::NormalisableRange<float>(0.0f, 1.0f), 0.6f));
 
-    params.push_back(std::make_unique<juce::AudioParameterChoice>(rateModeParam, "Rate Mode", juce::StringArray { "Sync", "Free" }, 0));
-    params.push_back(std::make_unique<juce::AudioParameterChoice>(syncNoteParam, "Sync Note", juce::StringArray { "1/1", "1/2", "1/4", "1/8", "1/16" }, 2));
-    params.push_back(std::make_unique<juce::AudioParameterBool>(syncDottedParam, "Sync Dotted", false));
-    params.push_back(std::make_unique<juce::AudioParameterBool>(syncTripletParam, "Sync Triplet", false));
-    params.push_back(std::make_unique<juce::AudioParameterFloat>(freeHzMaxParam, "Free Hz Max", juce::NormalisableRange<float>(0.05f, 10.0f, 0.0f, 0.3f), 2.5f));
+    params.push_back(std::make_unique<juce::AudioParameterChoice>(
+        rateModeParam, "Rate Mode", juce::StringArray{"Sync", "Free"}, 0));
+    params.push_back(std::make_unique<juce::AudioParameterChoice>(
+        syncNoteParam, "Sync Note", juce::StringArray{"1/1", "1/2", "1/4", "1/8", "1/16"}, 2));
+    params.push_back(
+        std::make_unique<juce::AudioParameterBool>(syncDottedParam, "Sync Dotted", false));
+    params.push_back(
+        std::make_unique<juce::AudioParameterBool>(syncTripletParam, "Sync Triplet", false));
+    params.push_back(std::make_unique<juce::AudioParameterFloat>(
+        freeHzMaxParam, "Free Hz Max", juce::NormalisableRange<float>(0.05f, 10.0f, 0.0f, 0.3f),
+        2.5f));
 
-    params.push_back(std::make_unique<juce::AudioParameterInt>(seedParam, "Seed", 0, std::numeric_limits<int>::max(), 12345));
+    params.push_back(std::make_unique<juce::AudioParameterInt>(
+        seedParam, "Seed", 0, std::numeric_limits<int>::max(), 12345));
     params.push_back(std::make_unique<juce::AudioParameterBool>(rerollParam, "Reroll", false));
 
-    constexpr std::array<float, EqCurve::numBands> defaultFreqs { 50.0f, 120.0f, 350.0f, 1000.0f, 2800.0f, 7000.0f, 14000.0f };
+    constexpr std::array<float, EqCurve::numBands> defaultFreqs{50.0f,   120.0f,  350.0f,  1000.0f,
+                                                                2800.0f, 7000.0f, 14000.0f};
 
     for (auto i = 0; i < EqCurve::numBands; ++i)
     {
         const auto idx = juce::String(i + 1);
-        params.push_back(std::make_unique<juce::AudioParameterFloat>("eq" + idx + "Freq", "EQ " + idx + " Freq",
-                                                                      juce::NormalisableRange<float>(20.0f, 20000.0f, 0.0f, 0.25f),
-                                                                      defaultFreqs[static_cast<size_t>(i)]));
-        params.push_back(std::make_unique<juce::AudioParameterFloat>("eq" + idx + "Gain", "EQ " + idx + " Gain",
-                                                                      juce::NormalisableRange<float>(-12.0f, 12.0f), 0.0f));
-        params.push_back(std::make_unique<juce::AudioParameterFloat>("eq" + idx + "Q", "EQ " + idx + " Q",
-                                                                      juce::NormalisableRange<float>(0.3f, 6.0f, 0.0f, 0.35f), 1.0f));
+        params.push_back(std::make_unique<juce::AudioParameterFloat>(
+            "eq" + idx + "Freq", "EQ " + idx + " Freq",
+            juce::NormalisableRange<float>(20.0f, 20000.0f, 0.0f, 0.25f),
+            defaultFreqs[static_cast<size_t>(i)]));
+        params.push_back(std::make_unique<juce::AudioParameterFloat>(
+            "eq" + idx + "Gain", "EQ " + idx + " Gain",
+            juce::NormalisableRange<float>(-12.0f, 12.0f), 0.0f));
+        params.push_back(std::make_unique<juce::AudioParameterFloat>(
+            "eq" + idx + "Q", "EQ " + idx + " Q",
+            juce::NormalisableRange<float>(0.3f, 6.0f, 0.0f, 0.35f), 1.0f));
     }
 
-    return { params.begin(), params.end() };
+    return {params.begin(), params.end()};
 }
 
 void ResonanceEQAudioProcessor::handleAsyncUpdate()
 {
-    if (! rerollPending.exchange(false))
+    if (!rerollPending.exchange(false))
         return;
 
     std::random_device rd;
@@ -331,9 +382,21 @@ void ResonanceEQAudioProcessor::updateEqTargetsFromParameters()
     for (auto band = 0; band < EqCurve::numBands; ++band)
     {
         const auto idx = juce::String(band + 1);
-        const auto freq = parameters.getRawParameterValue("eq" + idx + "Freq")->load();
-        const auto gain = parameters.getRawParameterValue("eq" + idx + "Gain")->load();
-        const auto qValue = parameters.getRawParameterValue("eq" + idx + "Q")->load();
+        const auto freqParamName = "eq" + idx + "Freq";
+        const auto gainParamName = "eq" + idx + "Gain";
+        const auto qParamName = "eq" + idx + "Q";
+
+        float freq = 1000.0f; // default
+        if (auto* param = parameters.getRawParameterValue(freqParamName))
+            freq = param->load();
+
+        float gain = 0.0f;
+        if (auto* param = parameters.getRawParameterValue(gainParamName))
+            gain = param->load();
+
+        float qValue = 1.0f;
+        if (auto* param = parameters.getRawParameterValue(qParamName))
+            qValue = param->load();
 
         eqCurve.setBandTarget(band, freq, gain, qValue);
     }
@@ -343,4 +406,3 @@ juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter()
 {
     return new ResonanceEQAudioProcessor();
 }
-
