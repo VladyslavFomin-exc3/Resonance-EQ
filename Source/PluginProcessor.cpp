@@ -167,6 +167,8 @@ void ResonanceEQAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,
         buffer.clear(i, 0, buffer.getNumSamples());
     }
 
+    // If bypass is engaged, skip the DSP pipeline entirely.
+    // This ensures zero-latency passthrough and prevents unwanted state changes.
     bool bypassed = false;
     if (auto* param = parameters.getRawParameterValue(bypassParam))
     {
@@ -178,6 +180,7 @@ void ResonanceEQAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,
         return;
     }
 
+    // Dry/wet amount controls blending of processed signal and original input.
     float amount = 0.0f;
     if (auto* param = parameters.getRawParameterValue(amountParam))
         amount = hreq::util::clampFloat(param->load(), 0.0f, 1.0f);

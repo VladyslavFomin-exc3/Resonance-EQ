@@ -5,11 +5,20 @@
 #include <array>
 #include <random>
 
+/**
+ * @brief Randomized resonance engine for dynamic spectral movement.
+ *
+ * Generates time-varying resonances controlled by BPM sync, randomness, and
+ * frequency/Q parameters. Applied as a second stage in the plugin chain.
+ */
 class ResonanceEngine
 {
   public:
     static constexpr int maxResonances = 12;
 
+    /**
+     * @brief Container for real-time resonance control settings.
+     */
     struct Params
     {
         float randomness = 0.25f;
@@ -24,17 +33,38 @@ class ResonanceEngine
         float bpm = 120.0f;
     };
 
+    /**
+     * @brief Initialize resonance filters and smoothing states.
+     * @param spec Process spec containing sample rate and channel count.
+     */
     void prepare(const juce::dsp::ProcessSpec& spec);
+
+    /** @brief Reset state and parameter smoothing for a new playback run. */
     void reset();
 
+    /**
+     * @brief Set the pseudo-random generator seed for deterministic behavior.
+     * @param newSeed New seed value.
+     */
     void setSeed(const int newSeed);
+
+    /**
+     * @brief Update runtime parameters in the engine.
+     * @param newParams Resonance parameters structure.
+     */
     void setParameters(const Params& newParams);
+
+    /**
+     * @brief Process audio buffer applying resonance filters.
+     * @param buffer Audio buffer to process in-place.
+     */
     void processBlock(juce::AudioBuffer<float>& buffer);
 
   private:
     using Filter = juce::dsp::ProcessorDuplicator<juce::dsp::IIR::Filter<float>,
                                                   juce::dsp::IIR::Coefficients<float>>;
 
+    // Control engine internals
     void updateControlTicks(int numSamples);
     void triggerNewTargets();
     void updateCoefficients(int numSamples);

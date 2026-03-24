@@ -1,119 +1,526 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "https://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml" lang="en-US">
+<!DOCTYPE html>
+<html lang="uk" dir="ltr">
 <head>
-<meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8"/>
-<meta http-equiv="X-UA-Compatible" content="IE=11"/>
-<meta name="generator" content="Doxygen 1.16.1"/>
-<meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>ResonanceEQ: ResonanceEQ Documentation</title>
-<link href="tabs.css" rel="stylesheet" type="text/css"/>
-<script type="text/javascript" src="jquery.js"></script>
-<script type="text/javascript" src="dynsections.js"></script>
-<script type="text/javascript" src="clipboard.js"></script>
-<link href="navtree.css" rel="stylesheet" type="text/css"/>
-<script type="text/javascript" src="navtreedata.js"></script>
-<script type="text/javascript" src="navtree.js"></script>
-<script type="text/javascript" src="cookie.js"></script>
-<link href="search/search.css" rel="stylesheet" type="text/css"/>
-<script type="text/javascript" src="search/searchdata.js"></script>
-<script type="text/javascript" src="search/search.js"></script>
-<link href="doxygen.css" rel="stylesheet" type="text/css" />
+  <!-- ============================================
+       Meta Tags - Essential
+       ============================================ -->
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="light dark">
+  
+  <!-- ============================================
+       Meta Tags - SEO & Description
+       ============================================ -->
+  <title>Resonance-EQ | Бакалаврська робота з обробки аудіосигналу</title>
+  <meta name="description" content="Бакалаврська робота присвячена розробці програмної системи для алгоритмічної трансформації аудіосигналу у форматі VST3-плагіна з використанням еквалізації, генерації резонансів та безпечної обробки сигналу.">
+  <meta name="keywords" content="DSP, VST3, audio plugin, JUCE, equalizer, resonance, spectral processing, бакалавр, аудіо">
+  <meta name="author" content="Владислав Фомін">
+  <meta name="theme-color" content="#0066cc">
+  <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large">
+  
+  <!-- ============================================
+       Social Media & Open Graph Tags
+       ============================================ -->
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Resonance-EQ | Інформаційне та програмне забезпечення системи алгоритмічної трансформації аудіосигналу">
+  <meta property="og:description" content="Бакалаврська робота присвячена розробці програмної системи для алгоритмічної трансформації аудіосигналу у форматі VST3-плагіна">
+  <meta property="og:image" content="https://TODO-domain.com/img/thesis-preview.png">
+  <meta property="og:url" content="https://TODO-domain.com">
+  <meta property="og:site_name" content="Resonance-EQ Thesis">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Resonance-EQ - Bachelor Thesis">
+  <meta name="twitter:description" content="VST3 plugin for algorithmic audio signal transformation with DSP-based architecture">
+  <!-- TODO: Replace TODO-domain.com with actual domain -->
+  
+  <!-- ============================================
+       Canonical & Alternative Links
+       ============================================ -->
+  <link rel="canonical" href="https://TODO-domain.com">
+  <link rel="alternate" hreflang="uk" href="https://TODO-domain.com">
+  <!-- TODO: Add alternate hreflang for EN version when available -->
+  
+  <!-- ============================================
+       Favicon & App Icons
+       ============================================ -->
+  <link rel="icon" type="image/x-icon" href="favicon/favicon.ico">
+  <link rel="apple-touch-icon" href="favicon/apple-touch-icon.png">
+  <link rel="manifest" href="manifest.webmanifest">
+  
+  <!-- ============================================
+       Stylesheets
+       ============================================ -->
+  <link rel="stylesheet" href="css/normalize.css">
+  <link rel="stylesheet" href="css/style.css">
+  
+  <!-- ============================================
+       JSON-LD Structured Data (Schema.org)
+       ============================================ -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "ScholarlyArticle",
+    "headline": "Інформаційне та програмне забезпечення системи алгоритмічної трансформації аудіосигналу",
+    "alternativeHeadline": "Information and Software Support of an Algorithmic Audio Signal Transformation System",
+    "description": "Bachelor thesis focused on the development of a software system for algorithmic audio signal transformation in the form of a VST3 plugin using equalization, resonance generation, and safe signal processing.",
+    "image": "https://TODO-domain.com/img/thesis-preview.png",
+    "author": {
+      "@type": "Person",
+      "name": "Владислав Фомін",
+      "affiliation": {
+        "@type": "Organization",
+        "name": "Sumy State University",
+        "alternateName": "СумДУ"
+      }
+    },
+    "datePublished": "2026-03-22",
+    "dateModified": "2026-03-22",
+    "publisher": {
+      "@type": "Organization",
+      "name": "Sumy State University",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://vladyslavfomin-exc3.github.io/Resonance-EQ/website/img/sumdu-logo.png"
+      }
+    },
+    "keywords": "DSP, VST3, audio plugin, JUCE, equalizer, resonance, spectral processing",
+    "url": "https://vladyslavfomin-exc3.github.io/Resonance-EQ"
+  }
+  </script>
+  
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    "name": "Resonance-EQ",
+    "url": "https://vladyslavfomin-exc3.github.io/Resonance-EQ",
+    "logo": "https://vladyslavfomin-exc3.github.io/Resonance-EQ/website/img/sumdu-logo.png",
+    "description": "VST3 plugin for algorithmic audio signal transformation",
+    "foundingDate": "2026-03-22",
+    "sameAs": [
+      "https://github.com/VladyslavFomin-exc3/Resonance-EQ"
+    ]
+  }
+  </script>
 </head>
 <body>
-<div id="top"><!-- do not remove this div, it is closed by doxygen! -->
-<div id="titlearea">
-<table cellspacing="0" cellpadding="0">
- <tbody>
- <tr id="projectrow">
-  <td id="projectalign">
-   <div id="projectname">ResonanceEQ
-   </div>
-  </td>
- </tr>
- </tbody>
-</table>
-</div>
-<!-- end header part -->
-<!-- Generated by Doxygen 1.16.1 -->
-<script type="text/javascript">
-var searchBox = new SearchBox("searchBox", "search/",'.html');
-</script>
-<script type="text/javascript">
-$(function() { codefold.init(); });
-</script>
-<script type="text/javascript" src="menudata.js"></script>
-<script type="text/javascript" src="menu.js"></script>
-<script type="text/javascript">
-$(function() {
-  initMenu('',true,false,'search.php','Search',true);
-  $(function() { init_search(); });
-});
-</script>
-<div id="main-nav"></div>
-</div><!-- top -->
-<div id="side-nav" class="ui-resizable side-nav-resizable">
-  <div id="nav-tree">
-    <div id="nav-tree-contents">
-      <div id="nav-sync" class="sync"></div>
+  <!-- ============================================
+       Header with Navigation
+       ============================================ -->
+  <header role="banner">
+    <div class="header-container">
+      <a href="#main-content" class="logo" aria-label="Resonance-EQ: До головної сторінки">
+        <img src="img/star of chaos.jpg" alt="Логотип Resonance-EQ" class="logo-icon">
+        <span>Resonance-EQ</span>
+      </a>
+      <nav role="navigation" aria-label="Main navigation">
+        <ul>
+          <li><a href="#thesis">Робота</a></li>
+          <li><a href="#objectives">Завдання</a></li>
+          <li><a href="#methodology">Методологія</a></li>
+          <li><a href="#results">Результати</a></li>
+          <li><a href="#contact">Контакти</a></li>
+        </ul>
+      </nav>
     </div>
-  </div>
-  <div id="splitbar" style="-moz-user-select:none;" 
-       class="ui-resizable-handle">
-  </div>
-</div>
-<script type="text/javascript">
-$(function(){initNavTree('index.html','',''); });
-</script>
-<div id="container">
-<div id="doc-content">
-<!-- window showing the filter options -->
-<div id="MSearchSelectWindow"
-     onmouseover="return searchBox.OnSearchSelectShow()"
-     onmouseout="return searchBox.OnSearchSelectHide()"
-     onkeydown="return searchBox.OnSearchSelectKey(event)">
-</div>
+  </header>
 
-<!-- iframe showing the search results (closed by default) -->
-<div id="MSearchResultsWindow">
-<div id="MSearchResults">
-<div class="SRPage">
-<div id="SRIndex">
-<div id="SRResults"></div>
-<div class="SRStatus" id="Loading">Loading...</div>
-<div class="SRStatus" id="Searching">Searching...</div>
-<div class="SRStatus" id="NoMatches">No Matches</div>
-</div>
-</div>
-</div>
-</div>
+  <!-- ============================================
+       Hero Section
+       ============================================ -->
+  <section class="hero" aria-labelledby="hero-title">
+    <div class="hero-container">
+      <h1 id="hero-title">Інформаційне та програмне забезпечення системи алгоритмічної трансформації аудіосигналу</h1>
+      <p class="hero-subtitle">Resonance-EQ: VST3 Plugin for Advanced Audio Processing</p>
+      <p class="hero-description">
+        Бакалаврська робота присвячена розробці програмної системи для алгоритмічної трансформації аудіосигналу у форматі VST3-плагіна з використанням еквалізації, генерації резонансів та безпечної обробки сигналу.
+      </p>
+      <div class="hero-cta">
+        <a href="#methodology" class="btn btn-primary">Дізнатись більше</a>
+        <a href="https://github.com/VladyslavFomin-exc3/Resonance-EQ.git" class="btn btn-secondary" target="_blank" rel="noopener noreferrer">GitHub Репозиторій</a>
+      </div>
+    </div>
+  </section>
 
-<div><div class="header">
-  <div class="headertitle"><div class="title">ResonanceEQ Documentation </div></div>
-</div><!--header-->
-<div class="contents">
-<div class="textblock"><h1 class="doxsection"><a class="anchor" id="intro"></a>
-Introduction</h1>
-<p>ResonanceEQ is a VST plugin built with JUCE. It implements a spectral EQ with dynamic resonances.</p>
-<h1 class="doxsection"><a class="anchor" id="architecture"></a>
-Architecture</h1>
-<p>DSP pipeline:</p><ul>
-<li>EQ</li>
-<li>Resonance Engine</li>
-<li>Safety Limiter</li>
-</ul>
-<h1 class="doxsection"><a class="anchor" id="usage"></a>
-Usage</h1>
-<p>The plugin processes audio in real-time and applies dynamic spectral transformations. </p>
-</div></div><!-- PageDoc -->
-<a href="doxygen_crawl.html"></a>
-</div><!-- contents -->
-</div><!-- doc-content -->
-</div><!-- container -->
-<!-- start footer part -->
-<div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
-  <ul>
-    <li class="footer">Generated by <a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.16.1 </li>
-  </ul>
-</div>
+  <!-- ============================================
+       Main Content
+       ============================================ -->
+  <main id="main-content" role="main">
+
+    <!-- ============================================
+         Summary Section (Keywords, Description)
+         ============================================ -->
+    <section id="thesis" aria-labelledby="thesis-heading">
+      <h2 id="thesis-heading" class="section-title">Про роботу</h2>
+      
+      <div class="summary-grid">
+        <div class="summary-card">
+          <h3>Українська назва</h3>
+          <p>
+            Інформаційне та програмне забезпечення системи алгоритмічної трансформації аудіосигналу
+          </p>
+        </div>
+        
+        <div class="summary-card">
+          <h3>Англійська назва</h3>
+          <p>
+            Information and Software Support of an Algorithmic Audio Signal Transformation System
+          </p>
+        </div>
+        
+        <div class="summary-card">
+          <h3>Короткий опис</h3>
+          <p>
+            Бакалаврська робота присвячена розробці програмної системи для алгоритмічної трансформації аудіосигналу у форматі VST3-плагіна з використанням еквалізації, генерації резонансів та безпечної обробки сигналу.
+          </p>
+        </div>
+        
+        <div class="summary-card">
+          <h3>Ключові слова</h3>
+          <div class="tags">
+            <span class="tag">DSP</span>
+            <span class="tag">VST3</span>
+            <span class="tag">Audio Plugin</span>
+            <span class="tag">JUCE</span>
+            <span class="tag">Equalizer</span>
+            <span class="tag">Resonance</span>
+            <span class="tag">Spectral Processing</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Relevance -->
+      <div class="content-section">
+        <h3>Актуальність теми</h3>
+        <p>
+          Цифрова обробка аудіосигналу (DSP) є невід'ємною частиною сучасних технологій музичного виробництва та аудіоінженерії. Розробка спеціалізованих плагінів для DAW (Digital Audio Workstation) вимагає глибокого розуміння як теоретичних основ обробки сигналів, так і практичних навичок програмування на С++. Проект Resonance-EQ демонструє застосування сучасних підходів до розробки професійних аудіоплагінів з використанням JUCE-фреймворку та VST3 стандарту.
+        </p>
+        <p>
+          Актуальність роботи визначається:
+        </p>
+        <ul style="margin-left: 1.5rem;">
+          <li>Зростанням попиту на спеціалістів у галузі аудіотехнологій</li>
+          <li>Необхідністю практичного застосування теоретичних знань DSP</li>
+          <li>Розвитком стандарту VST3 та його реалізацією</li>
+          <li>Потребою в якісних, безпечних та ефективних інструментах для аудіоінженерів</li>
+        </ul>
+      </div>
+
+      <!-- Research Goal -->
+      <div class="content-section">
+        <h3>Мета дослідження</h3>
+        <p>
+          Розробити програмну систему для алгоритмічної трансформації аудіосигналу у вигляді VST3-плагіна з керованою користувачем обробкою та сучасною DSP-архітектурою.
+        </p>
+      </div>
+    </section>
+
+    <!-- ============================================
+         Objectives Section
+         ============================================ -->
+    <section id="objectives" aria-labelledby="objectives-heading">
+      <h2 id="objectives-heading" class="section-title">Основні завдання</h2>
+      
+      <ol class="objective-list">
+        <li>
+          <strong>Аналіз сучасних підходів до цифрової обробки аудіосигналу:</strong>
+          Дослідження теоретичних основ DSP, методів еквалізації, генерації резонансів та безпечної обробки сигналу.
+        </li>
+        
+        <li>
+          <strong>Проектування архітектури програмної системи:</strong>
+          Розроблення модульної архітектури з урахуванням вимог VST3 стандарту та оптимізації продуктивності.
+        </li>
+        
+        <li>
+          <strong>Реалізація модулів еквалізації та генерації резонансів:</strong>
+          Розроблення функціональних модулів для обробки аудіосигналу з контролем параметрів користувачем.
+        </li>
+        
+        <li>
+          <strong>Забезпечення безпеки обробки сигналу:</strong>
+          Реалізація захисту від перевищення рівня гучності (clipping), обмеження динамічного діапазону та запобігання артефактам обробки.
+        </li>
+        
+        <li>
+          <strong>Створення сучасного веб-представлення роботи:</strong>
+          Розроблення адаптивного, доступного та SEO-оптимізованого веб-сайту для презентації результатів дослідження.
+        </li>
+      </ol>
+    </section>
+
+    <!-- ============================================
+         Methodology Section
+         ============================================ -->
+    <section id="methodology" aria-labelledby="methodology-heading">
+      <h2 id="methodology-heading" class="section-title">Методологія</h2>
+      
+      <div class="methodology-items">
+        <div class="methodology-item">
+          <h4>Мова програмування</h4>
+          <p>C++ з сучасними стандартами (C++17/20) для оптимальної продуктивності та надійності</p>
+        </div>
+        
+        <div class="methodology-item">
+          <h4>JUCE Framework</h4>
+          <p>Професійний фреймворк для розробки аудіоплагінів з кросс-платформною підтримкою</p>
+        </div>
+        
+        <div class="methodology-item">
+          <h4>VST3 Standard</h4>
+          <p>Сучасний стандарт для аудіоплагінів з поліпшеною архітектурою та продуктивністю</p>
+        </div>
+        
+        <div class="methodology-item">
+          <h4>DSP Methods</h4>
+          <p>Застосування математичних методів обробки сигналів для реалізації еквалізації та фільтрації</p>
+        </div>
+        
+        <div class="methodology-item">
+          <h4>Модульна архітектура</h4>
+          <p>Розділення функціональності на незалежні модулі для гнучкості та тестування</p>
+        </div>
+        
+        <div class="methodology-item">
+          <h4>Git Flow</h4>
+          <p>Використання традиційної моделі управління версіями (develop, feature, release гілки)</p>
+        </div>
+        
+        <div class="methodology-item">
+          <h4>Тестування в DAW</h4>
+          <p>Перевірка плагіна в реальних DAW середовищах (Ableton Live, FL Studio, тощо)</p>
+        </div>
+        
+        <div class="methodology-item">
+          <h4>Ітеративний розвиток</h4>
+          <p>Послідовна розробка з регулярним тестуванням та вдосконаленням функціональності</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================
+         Expected Results Section
+         ============================================ -->
+    <section id="results" aria-labelledby="results-heading">
+      <h2 id="results-heading" class="section-title">Очікувані результати</h2>
+      
+      <div class="results-grid">
+        <article class="result-card">
+          <h3>Робочий прототип Resonance-EQ</h3>
+          <p>
+            Повністю функціональний VST3-плагін з інтерфейсом користувача, готовий до використання в DAW.
+          </p>
+        </article>
+        
+        <article class="result-card">
+          <h3>Модульна DSP-архітектура</h3>
+          <p>
+            Добре спроектована, легко розширювана архітектура для подальшого розвитку та дослідження.
+          </p>
+        </article>
+        
+        <article class="result-card">
+          <h3>Адаптивний веб-сайт</h3>
+          <p>
+            Сучасна, доступна і SEO-оптимізована презентація результатів роботи на веб-платформі.
+          </p>
+        </article>
+        
+        <article class="result-card">
+          <h3>Документація проекту</h3>
+          <p>
+            Детальна документація кодової бази, архітектури та рекомендацій для подальшого розвитку.
+          </p>
+        </article>
+        
+        <article class="result-card">
+          <h3>GitHub репозиторій</h3>
+          <p>
+            Публічний репозиторій з повною історією розвитку, дотриманням Git Flow.
+          </p>
+        </article>
+        
+        <article class="result-card">
+          <h3>Підстава для подальших досліджень</h3>
+          <p>
+            Сучасна база для розширення функціональності, оптимізації та наукових досліджень у галузі DSP.
+          </p>
+        </article>
+      </div>
+    </section>
+
+    <!-- ============================================
+         Visual Block - University & Research Object
+         ============================================ -->
+    <section aria-labelledby="visual-heading">
+      <h2 id="visual-heading" class="section-title" style="margin-bottom: 2rem;">Організація та дослідницький об'єкт</h2>
+      
+      <div class="visual-block">
+        <div class="visual-content">
+          <div class="visual-text">
+            <h3>СумДУ - Підтримка розробки</h3>
+            <p>
+              Робота була розроблена в межах програми бакалаврського навчання на кафедрі інформаційних технологій Сумського державного університету. Факультет надав необхідні ресурси, консультацію та підтримку для реалізації проекту.
+            </p>
+          </div>
+          <div class="logo-container">
+            <img src="img/sumdu-logo.png" alt="СумДУ - Суми́цький державний університет" width="120" height="auto">
+          </div>
+        </div>
+      </div>
+
+      <div class="visual-block" style="margin-top: 2rem;">
+        <div class="visual-content">
+          <div class="placeholder-image">
+            🎵 Резонанс-EQ<br>
+            <span style="font-size: 0.85rem; opacity: 0.7;">VST3 Audio Plugin</span>
+          </div>
+          <div class="visual-text">
+            <h3>Дослідницький об'єкт: Resonance-EQ</h3>
+            <p>
+              Resonance-EQ — це вихідний об'єкт дослідження, програмна система для алгоритмічної трансформації аудіосигналу. Плагін реалізує основні концепції DSP, включаючи еквалізацію, генерацію резонансів і безпечну обробку сигналу. Розробка відбувалась з використанням сучасних технологій (C++, JUCE, VST3) і принципів модульної архітектури.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================
+         Contact Section
+         ============================================ -->
+    <section id="contact" aria-labelledby="contact-heading">
+      <h2 id="contact-heading" class="section-title">Контактна інформація</h2>
+      
+      <div class="contact-section">
+        <h3>Автор роботи</h3>
+        
+        <div class="contact-grid">
+          <div class="contact-item">
+            <div class="contact-label">Ім'я студента</div>
+            <div class="contact-value">Владислав Фомін</div>
+          </div>
+          
+          <div class="contact-item">
+            <div class="contact-label">Група</div>
+            <div class="contact-value">ІН-22</div>
+          </div>
+          
+          <div class="contact-item">
+            <div class="contact-label">Університет</div>
+            <div class="contact-value">Сумський державний університет (СумДУ)</div>
+          </div>
+          
+          <div class="contact-item">
+            <div class="contact-label">Email</div>
+            <div class="contact-value">
+              <a href="mailto:fxcktrasx@gmail.com">fxcktrasx@gmail.com</a>
+            </div>
+          </div>
+          
+          <div class="contact-item">
+            <div class="contact-label">GitHub</div>
+            <div class="contact-value">
+              <a href="https://github.com/VladyslavFomin-exc3" target="_blank" rel="noopener noreferrer">github.com/VladyslavFomin-exc3</a>
+            </div>
+          </div>
+          
+          <div class="contact-item">
+            <div class="contact-label">Репозиторій</div>
+            <div class="contact-value">
+              <a href="https://github.com/VladyslavFomin-exc3/Resonance-EQ.git" target="_blank" rel="noopener noreferrer">Resonance-EQ на GitHub</a>
+            </div>
+          </div>
+        </div>
+
+        <div style="margin-top: 2rem; padding-top: 2rem; border-top: 1px solid var(--color-border); text-align: center;">
+          <h4 style="margin-bottom: 1rem;">Керівники</h4>
+          <p style="color: var(--color-text-light); margin: 0.5rem 0;">
+            <strong>Науковий керівник:</strong> Микола Олександрович Зарецький
+          </p>
+          <p style="color: var(--color-text-light); margin: 0.5rem 0;">
+            <strong>Кафедра:</strong> Інформаційні технології
+          </p>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ============================================
+       Footer
+       ============================================ -->
+  <footer role="contentinfo">
+    <div class="footer-container">
+      <div class="footer-content">
+        <section class="footer-section">
+          <h3>Про проект</h3>
+          <p>
+            Resonance-EQ — це бакалаврська робота на тему розробки сучасного VST3-плагіна для алгоритмічної трансформації аудіосигналу. Проект демонструє практичне застосування знань у цифровій обробці аудіо та розробці музичного програмного забезпечення.
+          </p>
+        </section>
+
+        <section class="footer-section">
+          <h3>Ресурси</h3>
+          <ul class="footer-links">
+            <li><a href="https://github.com/VladyslavFomin-exc3/Resonance-EQ.git" target="_blank" rel="noopener noreferrer">GitHub Repository</a></li>
+            <li><a href="https://juce.com/" target="_blank" rel="noopener noreferrer">JUCE Framework</a></li>
+            <li><a href="https://www.steinberg.net/en/company/technologies/vst3/" target="_blank" rel="noopener noreferrer">VST3 Standard</a></li>
+            <li><a href="https://sumdu.edu.ua" target="_blank" rel="noopener noreferrer">Сумський державний університет</a></li>
+          </ul>
+        </section>
+
+        <section class="footer-section">
+          <h3>Навігація</h3>
+          <ul class="footer-links">
+            <li><a href="#thesis">Про роботу</a></li>
+            <li><a href="#objectives">Завдання</a></li>
+            <li><a href="#methodology">Методологія</a></li>
+            <li><a href="#results">Результати</a></li>
+            <li><a href="#contact">Контакти</a></li>
+          </ul>
+        </section>
+
+        <section class="footer-section">
+          <h3>Легальна інформація</h3>
+          <p>
+            <small>
+              Ця мережева презентація є частиною бакалаврської роботи, виконаної у відповідності з положеннями Сумського державного університету.
+            </small>
+          </p>
+          <p>
+            <small>
+              © 2024 Владислав Фомін. Усі права захищені.<br>
+              Дизайн і розробка: Чистий HTML/CSS, без фреймворків.
+            </small>
+          </p>
+        </section>
+      </div>
+
+      <div class="footer-bottom">
+        <p>
+          Розроблено з дотриманням сучасних стандартів веб-розробки (HTML5, CSS3, доступність, SEO). 
+          <a href="robots.txt" style="color: rgba(255, 255, 255, 0.9);">robots.txt</a> • 
+          <a href="sitemap.xml" style="color: rgba(255, 255, 255, 0.9);">sitemap.xml</a>
+        </p>
+      </div>
+    </div>
+  </footer>
+
+  <!-- ============================================
+       Skip to Main Content Link (Accessibility)
+       ============================================ -->
+  <script>
+    // Simple accessibility enhancement: skip to main content visible on focus
+    // This is minimal vanilla JS for enhanced keyboard navigation
+    document.addEventListener('DOMContentLoaded', function() {
+      // Keyboard shortcuts (accessibility)
+      document.addEventListener('keydown', function(e) {
+        // Alt + 1 to skip to main content
+        if (e.altKey && e.key === '1') {
+          document.getElementById('main-content').focus();
+        }
+      });
+    });
+  </script>
+
 </body>
 </html>

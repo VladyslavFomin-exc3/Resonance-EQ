@@ -91,6 +91,16 @@ The built VST3 plugin is located at:
 - `scripts/`: Automation scripts
 - `website/`: Project website
 
+## Documentation Guidelines
+
+To keep this project maintainable and lab-compliant, follow these rules:
+
+- Public classes, methods, and functions must use Doxygen comments (`/** ... */`) with `@brief`, `@param`, and `@return` where applicable.
+- All new public APIs (classes/functions/methods) should be documented at creation time.
+- DSP algorithms and non-obvious logic should include a short explanation and any real-time restrictions (`@note`, `@warning`).
+- Maintain architecture notes for complex interactions (processor/editor, DSP pipeline, parameter updates).
+- Update documentation whenever code behavior changes, especially parameter mapping or audio workflow.
+
 ## Troubleshooting
 
 ### Build fails
