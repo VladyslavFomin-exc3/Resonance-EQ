@@ -12,7 +12,8 @@ class EqCurve
     void prepare(const juce::dsp::ProcessSpec& spec);
     void reset();
 
-    void setBandTarget(const int bandIndex, const float frequencyHz, const float gainDb, const float qValue);
+    void setBandTarget(const int bandIndex, const float frequencyHz, const float gainDb,
+                       const float qValue);
     void processBlock(juce::AudioBuffer<float>& buffer);
 
   private:

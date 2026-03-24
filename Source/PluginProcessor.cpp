@@ -35,7 +35,7 @@ ResonanceEQAudioProcessor::ResonanceEQAudioProcessor()
 
 ResonanceEQAudioProcessor::~ResonanceEQAudioProcessor() = default;
 
-juce::String ResonanceEQAudioProcessor::getName() const
+const juce::String ResonanceEQAudioProcessor::getName() const
 {
     return JucePlugin_Name;
 }
@@ -87,7 +87,7 @@ void ResonanceEQAudioProcessor::setCurrentProgram(int index)
     juce::ignoreUnused(index);
 }
 
-juce::String ResonanceEQAudioProcessor::getProgramName(int index)
+const juce::String ResonanceEQAudioProcessor::getProgramName(int index)
 {
     juce::ignoreUnused(index);
     return {};
