@@ -45,6 +45,8 @@ target_sources(ResonanceEQ
         Source/PluginProcessor.cpp
         Source/PluginEditor.h
         Source/PluginEditor.cpp
+        Source/AppLogger.h
+        Source/AppLogger.cpp
         Source/Dsp/Utilities.h
         Source/Dsp/Utilities.cpp
         Source/Dsp/EqCurve.h

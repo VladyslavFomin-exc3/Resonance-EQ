@@ -30,7 +30,9 @@
  * Handles parameter state, DSP chain orchestration (EQ -> resonance -> limiter),
  * and host integration (preset/state, sample rate, buffer setup).
  */
-class ResonanceEQAudioProcessor final : public juce::AudioProcessor, private juce::AsyncUpdater
+class ResonanceEQAudioProcessor final : public juce::AudioProcessor,
+                                         private juce::AsyncUpdater,
+                                         private juce::AudioProcessorValueTreeState::Listener
 {
   public:
     /** @brief Constructor. */
@@ -120,6 +122,9 @@ class ResonanceEQAudioProcessor final : public juce::AudioProcessor, private juc
      */
     void setStateInformation(const void* data, int sizeInBytes) override;
 
+    /** @brief Get user-friendly last non-realtime error status. */
+    juce::String getLastErrorMessage() const;
+
     /**
      * @brief Create the parameter layout for this plugin.
      * @return Configured parameter layout.
@@ -136,17 +141,36 @@ class ResonanceEQAudioProcessor final : public juce::AudioProcessor, private juc
      */
     void handleAsyncUpdate() override;
 
+    void parameterChanged(const juce::String& parameterID, float newValue) override;
+
+    /** @brief Audio thread flags for recovered realtime issues. */
+    void reportRealtimeError(int errorCode, const char* description) noexcept;
+
     /**
      * @brief Read BPM from host transport.
      * @return BPM clamped to [20, 300], defaults to 120.
      */
     float readBpm() const;
 
+    void setLastError(const juce::String& message);
+
     /** @brief Update each EQ band target from parameters. */
     void updateEqTargetsFromParameters();
 
     std::atomic<bool> rerollPending{false};
     bool rerollButtonWasDown = false;
+
+    std::atomic<bool> realtimeErrorPending{false};
+    std::atomic<int> realtimeErrorCode{0};
+    juce::String realtimeErrorDescription;
+
+    std::atomic<bool> parameterChangePending{false};
+    std::atomic<float> parameterChangeValue{0.0f};
+    juce::String parameterChangeId;
+    juce::CriticalSection parameterChangeLock;
+
+    juce::String lastErrorMessage;
+    mutable juce::CriticalSection lastErrorLock;
 
     int lastSeed = 12345;
 

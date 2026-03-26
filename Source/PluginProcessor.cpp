@@ -1,4 +1,5 @@
 #include "PluginProcessor.h"
+#include "AppLogger.h"
 
 #include "Dsp/Utilities.h"
 #include "PluginEditor.h"
@@ -31,9 +32,44 @@ ResonanceEQAudioProcessor::ResonanceEQAudioProcessor()
                          .withOutput("Output", juce::AudioChannelSet::stereo(), true)),
       parameters(*this, nullptr, "PARAMETERS", createParameterLayout())
 {
+    AppLogging::AppLogger::initialize();
+    AppLogging::AppLogger::info("Plugin", "Processor constructor");
+
+    const auto addListener = [this](const juce::String& id) {
+        if (id.isNotEmpty())
+            parameters.addParameterListener(id, this);
+    };
+
+    addListener(amountParam);
+    addListener(randomnessParam);
+    addListener(orderParam);
+    addListener(outputGainParam);
+    addListener(bypassParam);
+    addListener(countMaxParam);
+    addListener(qMaxParam);
+    addListener(motionMaxParam);
+    addListener(rateModeParam);
+    addListener(syncNoteParam);
+    addListener(syncDottedParam);
+    addListener(syncTripletParam);
+    addListener(freeHzMaxParam);
+    addListener(seedParam);
+    addListener(rerollParam);
+
+    for (int band = 0; band < EqCurve::numBands; ++band)
+    {
+        const auto idx = juce::String(band + 1);
+        addListener("eq" + idx + "Freq");
+        addListener("eq" + idx + "Gain");
+        addListener("eq" + idx + "Q");
+    }
 }
 
-ResonanceEQAudioProcessor::~ResonanceEQAudioProcessor() = default;
+ResonanceEQAudioProcessor::~ResonanceEQAudioProcessor()
+{
+    AppLogging::AppLogger::info("Plugin", "Processor destructor");
+    AppLogging::AppLogger::shutdown();
+}
 
 const juce::String ResonanceEQAudioProcessor::getName() const
 {
@@ -100,35 +136,76 @@ void ResonanceEQAudioProcessor::changeProgramName(int index, const juce::String&
 
 void ResonanceEQAudioProcessor::prepareToPlay(const double sampleRate, const int samplesPerBlock)
 {
-    juce::dsp::ProcessSpec spec;
-    spec.sampleRate = sampleRate;
-    spec.maximumBlockSize = static_cast<juce::uint32>(juce::jmax(1, samplesPerBlock));
-    spec.numChannels = static_cast<juce::uint32>(
-        juce::jmax(getTotalNumInputChannels(), getTotalNumOutputChannels()));
+    try
+    {
+        AppLogging::AppLogger::info("Plugin", "prepareToPlay", "sampleRate=" + juce::String(sampleRate) + ", blockSize=" + juce::String(samplesPerBlock));
 
-    eqCurve.prepare(spec);
-    resonanceEngine.prepare(spec);
-    limiter.prepare(spec);
+        juce::dsp::ProcessSpec spec;
+        spec.sampleRate = sampleRate;
+        spec.maximumBlockSize = static_cast<juce::uint32>(juce::jmax(1, samplesPerBlock));
+        spec.numChannels = static_cast<juce::uint32>(
+            juce::jmax(getTotalNumInputChannels(), getTotalNumOutputChannels()));
 
-    outputGain.prepare(spec);
-    outputGain.setRampDurationSeconds(0.05);
-    outputGain.setGainDecibels(0.0f);
+        eqCurve.prepare(spec);
+        resonanceEngine.prepare(spec);
+        limiter.prepare(spec);
 
-    dryWetMixer.prepare(spec);
-    dryWetMixer.setMixingRule(juce::dsp::DryWetMixingRule::sin3dB);
-    dryWetMixer.setWetMixProportion(0.5f);
-    dryWetMixer.reset();
+        outputGain.prepare(spec);
+        outputGain.setRampDurationSeconds(0.05);
+        outputGain.setGainDecibels(0.0f);
 
-    eqCurve.reset();
-    resonanceEngine.reset();
-    limiter.reset();
+        dryWetMixer.prepare(spec);
+        dryWetMixer.setMixingRule(juce::dsp::DryWetMixingRule::sin3dB);
+        dryWetMixer.setWetMixProportion(0.5f);
+        dryWetMixer.reset();
 
-    lastSeed = juce::jlimit(0, std::numeric_limits<int>::max(),
-                            static_cast<int>(parameters.getRawParameterValue(seedParam)->load()));
-    resonanceEngine.setSeed(lastSeed);
+        eqCurve.reset();
+        resonanceEngine.reset();
+        limiter.reset();
+
+        lastSeed = juce::jlimit(0, std::numeric_limits<int>::max(),
+                                static_cast<int>(parameters.getRawParameterValue(seedParam)->load()));
+        resonanceEngine.setSeed(lastSeed);
+    }
+    catch (const std::exception& e)
+    {
+        const auto errorId = AppLogging::AppLogger::makeErrorId();
+        AppLogging::AppLogger::critical("Plugin", "prepareToPlay failed", "errorId=" + errorId + ", reason=" + e.what());
+        setLastError("Failed to start playback. Error ID: " + errorId);
+    }
+    catch (...)
+    {
+        const auto errorId = AppLogging::AppLogger::makeErrorId();
+        AppLogging::AppLogger::critical("Plugin", "prepareToPlay failed with unknown exception", "errorId=" + errorId);
+        setLastError("Failed to start playback. Error ID: " + errorId);
+    }
 }
 
-void ResonanceEQAudioProcessor::releaseResources() {}
+void ResonanceEQAudioProcessor::releaseResources()
+{
+    try
+    {
+        AppLogging::AppLogger::info("Plugin", "releaseResources");
+
+        eqCurve.reset();
+        resonanceEngine.reset();
+        limiter.reset();
+        outputGain.reset();
+        dryWetMixer.reset();
+    }
+    catch (const std::exception& e)
+    {
+        const auto errorId = AppLogging::AppLogger::makeErrorId();
+        AppLogging::AppLogger::error("Plugin", "releaseResources failed", "errorId=" + errorId + ", reason=" + e.what());
+        setLastError("Failed to release resources. Error ID: " + errorId);
+    }
+    catch (...)
+    {
+        const auto errorId = AppLogging::AppLogger::makeErrorId();
+        AppLogging::AppLogger::error("Plugin", "releaseResources failed with unknown exception", "errorId=" + errorId);
+        setLastError("Failed to release resources. Error ID: " + errorId);
+    }
+}
 
 #if !JucePlugin_IsMidiEffect
 bool ResonanceEQAudioProcessor::isBusesLayoutSupported(const BusesLayout& layouts) const
@@ -158,6 +235,12 @@ void ResonanceEQAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,
 {
     juce::ignoreUnused(midiMessages);
     juce::ScopedNoDenormals noDenormals;
+
+    if (buffer.getNumSamples() <= 0)
+    {
+        reportRealtimeError(1001, "processBlock has no samples");
+        return;
+    }
 
     const auto totalNumInputChannels = getTotalNumInputChannels();
     const auto totalNumOutputChannels = getTotalNumOutputChannels();
@@ -281,25 +364,73 @@ juce::AudioProcessorEditor* ResonanceEQAudioProcessor::createEditor()
 
 void ResonanceEQAudioProcessor::getStateInformation(juce::MemoryBlock& destData)
 {
-    const auto state = parameters.copyState();
-
-    if (const auto xml = state.createXml())
+    try
     {
-        copyXmlToBinary(*xml, destData);
+        const auto state = parameters.copyState();
+
+        if (const auto xml = state.createXml())
+        {
+            copyXmlToBinary(*xml, destData);
+        }
+
+        AppLogging::AppLogger::info("State", "getStateInformation saved");
+    }
+    catch (const std::exception& e)
+    {
+        const auto errorId = AppLogging::AppLogger::makeErrorId();
+        AppLogging::AppLogger::error("State", "getStateInformation failed", "errorId=" + errorId + ", reason=" + e.what());
+        setLastError("State save failed. Error ID: " + errorId);
+    }
+    catch (...)
+    {
+        const auto errorId = AppLogging::AppLogger::makeErrorId();
+        AppLogging::AppLogger::error("State", "getStateInformation failed with unknown exception", "errorId=" + errorId);
+        setLastError("State save failed. Error ID: " + errorId);
     }
 }
 
 void ResonanceEQAudioProcessor::setStateInformation(const void* data, const int sizeInBytes)
 {
-    if (const auto xml = getXmlFromBinary(data, sizeInBytes))
+    try
     {
-        if (xml->hasTagName(parameters.state.getType()))
-            parameters.replaceState(juce::ValueTree::fromXml(*xml));
-    }
+        if (const auto xml = getXmlFromBinary(data, sizeInBytes))
+        {
+            if (xml->hasTagName(parameters.state.getType()))
+                parameters.replaceState(juce::ValueTree::fromXml(*xml));
+        }
 
-    lastSeed = juce::jlimit(0, std::numeric_limits<int>::max(),
-                            static_cast<int>(parameters.getRawParameterValue(seedParam)->load()));
-    resonanceEngine.setSeed(lastSeed);
+        lastSeed = juce::jlimit(0, std::numeric_limits<int>::max(),
+                                static_cast<int>(parameters.getRawParameterValue(seedParam)->load()));
+        resonanceEngine.setSeed(lastSeed);
+
+        AppLogging::AppLogger::info("State", "setStateInformation loaded");
+    }
+    catch (const std::exception& e)
+    {
+        const auto errorId = AppLogging::AppLogger::makeErrorId();
+        AppLogging::AppLogger::error("State", "setStateInformation failed", "errorId=" + errorId + ", reason=" + e.what());
+        setLastError("State load failed. Error ID: " + errorId);
+    }
+    catch (...)
+    {
+        const auto errorId = AppLogging::AppLogger::makeErrorId();
+        AppLogging::AppLogger::error("State", "setStateInformation failed with unknown exception", "errorId=" + errorId);
+        setLastError("State load failed. Error ID: " + errorId);
+    }
+}
+
+void ResonanceEQAudioProcessor::reportRealtimeError(int errorCode, const char* description) noexcept
+{
+    realtimeErrorCode.store(errorCode);
+    realtimeErrorDescription = description;
+    realtimeErrorPending.store(true);
+    triggerAsyncUpdate();
+}
+
+void ResonanceEQAudioProcessor::setLastError(const juce::String& message)
+{
+    const juce::ScopedLock lock(lastErrorLock);
+    lastErrorMessage = message;
 }
 
 juce::AudioProcessorValueTreeState::ParameterLayout
@@ -363,6 +494,27 @@ ResonanceEQAudioProcessor::createParameterLayout()
 
 void ResonanceEQAudioProcessor::handleAsyncUpdate()
 {
+    if (realtimeErrorPending.exchange(false))
+    {
+        const auto code = realtimeErrorCode.load();
+        const auto description = realtimeErrorDescription;
+        AppLogging::AppLogger::warning("Realtime", "Recovered realtime error", "code=" + juce::String(code) + ", desc=" + description);
+        setLastError("Realtime error occurred. See log for error ID.");
+    }
+
+    if (parameterChangePending.exchange(false))
+    {
+        const auto value = parameterChangeValue.load();
+
+        juce::String paramName;
+        {
+            const juce::ScopedLock lock(parameterChangeLock);
+            paramName = parameterChangeId;
+        }
+
+        AppLogging::AppLogger::info("Parameter", "parameterChanged", "id=" + paramName + ", value=" + juce::String(value));
+    }
+
     if (!rerollPending.exchange(false))
         return;
 
@@ -383,6 +535,20 @@ void ResonanceEQAudioProcessor::handleAsyncUpdate()
         reroll->setValueNotifyingHost(0.0f);
         reroll->endChangeGesture();
     }
+
+    AppLogging::AppLogger::info("Parameters", "Reroll triggered", "newSeed=" + juce::String(newSeed));
+}
+
+void ResonanceEQAudioProcessor::parameterChanged(const juce::String& parameterID, float newValue)
+{
+    parameterChangeValue.store(newValue);
+    {
+        const juce::ScopedLock lock(parameterChangeLock);
+        parameterChangeId = parameterID;
+    }
+
+    parameterChangePending.store(true);
+    triggerAsyncUpdate();
 }
 
 float ResonanceEQAudioProcessor::readBpm() const
@@ -424,7 +590,14 @@ void ResonanceEQAudioProcessor::updateEqTargetsFromParameters()
     }
 }
 
+juce::String ResonanceEQAudioProcessor::getLastErrorMessage() const
+{
+    const juce::ScopedLock lock(lastErrorLock);
+    return lastErrorMessage;
+}
+
 juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter()
 {
+    AppLogging::AppLogger::info("Plugin", "createPluginFilter");
     return new ResonanceEQAudioProcessor();
 }
