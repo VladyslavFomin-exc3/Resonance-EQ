@@ -5,6 +5,7 @@
 #include "Dsp/EqCurve.h"
 #include "Dsp/ResonanceEngine.h"
 #include "Dsp/SafetyLimiter.h"
+#include "PerformanceProfiler.h"
 
 /**
  * @mainpage ResonanceEQ Documentation
@@ -125,6 +126,34 @@ class ResonanceEQAudioProcessor final : public juce::AudioProcessor,
     /** @brief Get user-friendly last non-realtime error status. */
     juce::String getLastErrorMessage() const;
 
+    struct ProfilingReport
+    {
+        int sampleRate = 44100;
+        int blockSize = 512;
+        double blockDurationUs = 0.0;
+        double averageProcessBlockUs = 0.0;
+        std::uint64_t maxProcessBlockNs = 0;
+        double averageLoadRatioPct = 0.0;
+        double peakLoadRatioPct = 0.0;
+        std::uint64_t processBlockCalls = 0;
+        std::array<PerformanceProfiler::Snapshot, PerformanceProfiler::sectionCount()> snapshots{};
+    };
+
+    /**
+     * @brief Retrieve a formatted profiling report in a safe context.
+     */
+    juce::String getProfilingSummary() const;
+
+    /**
+     * @brief Retrieve raw profiling snapshots for lab comparison.
+     */
+    ProfilingReport getProfilingReport() const noexcept;
+
+    /**
+     * @brief Clear accumulated profiling metrics.
+     */
+    void resetProfilingMetrics() noexcept;
+
     /**
      * @brief Create the parameter layout for this plugin.
      * @return Configured parameter layout.
@@ -174,7 +203,32 @@ class ResonanceEQAudioProcessor final : public juce::AudioProcessor,
 
     int lastSeed = 12345;
 
+    std::atomic<double> currentSampleRate{44100.0};
+    std::atomic<int> currentBlockSize{512};
+
+    std::atomic<float>* amountParameter = nullptr;
+    std::atomic<float>* randomnessParameter = nullptr;
+    std::atomic<float>* orderParameter = nullptr;
+    std::atomic<float>* outputGainParameter = nullptr;
+    std::atomic<float>* bypassParameter = nullptr;
+    std::atomic<float>* countMaxParameter = nullptr;
+    std::atomic<float>* qMaxParameter = nullptr;
+    std::atomic<float>* motionMaxParameter = nullptr;
+    std::atomic<float>* rateModeParameter = nullptr;
+    std::atomic<float>* syncNoteParameter = nullptr;
+    std::atomic<float>* syncDottedParameter = nullptr;
+    std::atomic<float>* syncTripletParameter = nullptr;
+    std::atomic<float>* freeHzMaxParameter = nullptr;
+    std::atomic<float>* seedParameter = nullptr;
+    std::atomic<float>* rerollParameter = nullptr;
+
+    std::array<std::atomic<float>*, EqCurve::numBands> eqFreqParameters{};
+    std::array<std::atomic<float>*, EqCurve::numBands> eqGainParameters{};
+    std::array<std::atomic<float>*, EqCurve::numBands> eqQParameters{};
+
     EqCurve eqCurve;
+    PerformanceProfiler profiler;
+
     ResonanceEngine resonanceEngine;
     SafetyLimiter limiter;
 

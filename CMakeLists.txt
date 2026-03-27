@@ -55,6 +55,8 @@ target_sources(ResonanceEQ
         Source/Dsp/ResonanceEngine.cpp
         Source/Dsp/SafetyLimiter.h
         Source/Dsp/SafetyLimiter.cpp
+        Source/PerformanceProfiler.h
+        Source/PerformanceProfiler.cpp
 )
 
 target_include_directories(ResonanceEQ

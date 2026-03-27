@@ -63,6 +63,30 @@ ResonanceEQAudioProcessor::ResonanceEQAudioProcessor()
         addListener("eq" + idx + "Gain");
         addListener("eq" + idx + "Q");
     }
+
+    amountParameter = parameters.getRawParameterValue(amountParam);
+    randomnessParameter = parameters.getRawParameterValue(randomnessParam);
+    orderParameter = parameters.getRawParameterValue(orderParam);
+    outputGainParameter = parameters.getRawParameterValue(outputGainParam);
+    bypassParameter = parameters.getRawParameterValue(bypassParam);
+    countMaxParameter = parameters.getRawParameterValue(countMaxParam);
+    qMaxParameter = parameters.getRawParameterValue(qMaxParam);
+    motionMaxParameter = parameters.getRawParameterValue(motionMaxParam);
+    rateModeParameter = parameters.getRawParameterValue(rateModeParam);
+    syncNoteParameter = parameters.getRawParameterValue(syncNoteParam);
+    syncDottedParameter = parameters.getRawParameterValue(syncDottedParam);
+    syncTripletParameter = parameters.getRawParameterValue(syncTripletParam);
+    freeHzMaxParameter = parameters.getRawParameterValue(freeHzMaxParam);
+    seedParameter = parameters.getRawParameterValue(seedParam);
+    rerollParameter = parameters.getRawParameterValue(rerollParam);
+
+    for (int band = 0; band < EqCurve::numBands; ++band)
+    {
+        const auto idx = juce::String(band + 1);
+        eqFreqParameters[band] = parameters.getRawParameterValue("eq" + idx + "Freq");
+        eqGainParameters[band] = parameters.getRawParameterValue("eq" + idx + "Gain");
+        eqQParameters[band] = parameters.getRawParameterValue("eq" + idx + "Q");
+    }
 }
 
 ResonanceEQAudioProcessor::~ResonanceEQAudioProcessor()
@@ -136,6 +160,9 @@ void ResonanceEQAudioProcessor::changeProgramName(int index, const juce::String&
 
 void ResonanceEQAudioProcessor::prepareToPlay(const double sampleRate, const int samplesPerBlock)
 {
+    PerformanceProfiler::ScopedTimer timer{profiler, PerformanceProfiler::Section::PrepareToPlay};
+    currentSampleRate.store(sampleRate, std::memory_order_relaxed);
+    currentBlockSize.store(samplesPerBlock, std::memory_order_relaxed);
     try
     {
         AppLogging::AppLogger::info("Plugin", "prepareToPlay", "sampleRate=" + juce::String(sampleRate) + ", blockSize=" + juce::String(samplesPerBlock));
@@ -233,6 +260,7 @@ bool ResonanceEQAudioProcessor::isBusesLayoutSupported(const BusesLayout& layout
 void ResonanceEQAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,
                                              juce::MidiBuffer& midiMessages)
 {
+    PerformanceProfiler::ScopedTimer totalTimer{profiler, PerformanceProfiler::Section::ProcessBlock};
     juce::ignoreUnused(midiMessages);
     juce::ScopedNoDenormals noDenormals;
 
@@ -253,10 +281,8 @@ void ResonanceEQAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,
     // If bypass is engaged, skip the DSP pipeline entirely.
     // This ensures zero-latency passthrough and prevents unwanted state changes.
     bool bypassed = false;
-    if (auto* param = parameters.getRawParameterValue(bypassParam))
-    {
-        bypassed = param->load() >= 0.5f;
-    }
+    if (bypassParameter)
+        bypassed = bypassParameter->load() >= 0.5f;
 
     if (bypassed)
     {
@@ -265,20 +291,20 @@ void ResonanceEQAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,
 
     // Dry/wet amount controls blending of processed signal and original input.
     float amount = 0.0f;
-    if (auto* param = parameters.getRawParameterValue(amountParam))
-        amount = hreq::util::clampFloat(param->load(), 0.0f, 1.0f);
+    if (amountParameter)
+        amount = hreq::util::clampFloat(amountParameter->load(), 0.0f, 1.0f);
 
     int order = 0;
-    if (auto* param = parameters.getRawParameterValue(orderParam))
-        order = static_cast<int>(param->load());
+    if (orderParameter)
+        order = static_cast<int>(orderParameter->load());
 
     float outputGainDb = 0.0f;
-    if (auto* param = parameters.getRawParameterValue(outputGainParam))
-        outputGainDb = hreq::util::clampFloat(param->load(), -24.0f, 12.0f);
+    if (outputGainParameter)
+        outputGainDb = hreq::util::clampFloat(outputGainParameter->load(), -24.0f, 12.0f);
 
     bool rerollDown = false;
-    if (auto* param = parameters.getRawParameterValue(rerollParam))
-        rerollDown = (param->load() >= 0.5f);
+    if (rerollParameter)
+        rerollDown = (rerollParameter->load() >= 0.5f);
     if (rerollDown && !rerollButtonWasDown)
     {
         rerollPending.store(true);
@@ -287,8 +313,8 @@ void ResonanceEQAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,
     rerollButtonWasDown = rerollDown;
 
     int seedNow = lastSeed;
-    if (auto* param = parameters.getRawParameterValue(seedParam))
-        seedNow = juce::jlimit(0, std::numeric_limits<int>::max(), static_cast<int>(param->load()));
+    if (seedParameter)
+        seedNow = juce::jlimit(0, std::numeric_limits<int>::max(), static_cast<int>(seedParameter->load()));
     if (seedNow != lastSeed)
     {
         lastSeed = seedNow;
@@ -298,34 +324,34 @@ void ResonanceEQAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,
     updateEqTargetsFromParameters();
 
     ResonanceEngine::Params resonanceParams;
-    if (auto* param = parameters.getRawParameterValue(randomnessParam))
-        resonanceParams.randomness = param->load();
+    if (randomnessParameter)
+        resonanceParams.randomness = randomnessParameter->load();
     int countMax = 1;
-    if (auto* param = parameters.getRawParameterValue(countMaxParam))
-        countMax = static_cast<int>(param->load());
+    if (countMaxParameter)
+        countMax = static_cast<int>(countMaxParameter->load());
     resonanceParams.countMax = countMax;
-    if (auto* param = parameters.getRawParameterValue(qMaxParam))
-        resonanceParams.qMax = param->load();
-    if (auto* param = parameters.getRawParameterValue(motionMaxParam))
-        resonanceParams.motionMax = param->load();
+    if (qMaxParameter)
+        resonanceParams.qMax = qMaxParameter->load();
+    if (motionMaxParameter)
+        resonanceParams.motionMax = motionMaxParameter->load();
     int rateMode = 0;
-    if (auto* param = parameters.getRawParameterValue(rateModeParam))
-        rateMode = static_cast<int>(param->load());
+    if (rateModeParameter)
+        rateMode = static_cast<int>(rateModeParameter->load());
     resonanceParams.rateMode = rateMode;
     int syncNote = 0;
-    if (auto* param = parameters.getRawParameterValue(syncNoteParam))
-        syncNote = static_cast<int>(param->load());
+    if (syncNoteParameter)
+        syncNote = static_cast<int>(syncNoteParameter->load());
     resonanceParams.syncNote = syncNote;
     bool syncDotted = false;
-    if (auto* param = parameters.getRawParameterValue(syncDottedParam))
-        syncDotted = param->load() >= 0.5f;
+    if (syncDottedParameter)
+        syncDotted = syncDottedParameter->load() >= 0.5f;
     resonanceParams.syncDotted = syncDotted;
     bool syncTriplet = false;
-    if (auto* param = parameters.getRawParameterValue(syncTripletParam))
-        syncTriplet = param->load() >= 0.5f;
+    if (syncTripletParameter)
+        syncTriplet = syncTripletParameter->load() >= 0.5f;
     resonanceParams.syncTriplet = syncTriplet;
-    if (auto* param = parameters.getRawParameterValue(freeHzMaxParam))
-        resonanceParams.freeHzMax = param->load();
+    if (freeHzMaxParameter)
+        resonanceParams.freeHzMax = freeHzMaxParameter->load();
     resonanceParams.bpm = readBpm();
     resonanceEngine.setParameters(resonanceParams);
 
@@ -335,13 +361,25 @@ void ResonanceEQAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,
 
     if (order == 0)
     {
-        eqCurve.processBlock(buffer);
-        resonanceEngine.processBlock(buffer);
+        {
+            PerformanceProfiler::ScopedTimer timer{profiler, PerformanceProfiler::Section::EqProcess};
+            eqCurve.processBlock(buffer);
+        }
+        {
+            PerformanceProfiler::ScopedTimer timer{profiler, PerformanceProfiler::Section::ResonanceProcess};
+            resonanceEngine.processBlock(buffer);
+        }
     }
     else
     {
-        resonanceEngine.processBlock(buffer);
-        eqCurve.processBlock(buffer);
+        {
+            PerformanceProfiler::ScopedTimer timer{profiler, PerformanceProfiler::Section::ResonanceProcess};
+            resonanceEngine.processBlock(buffer);
+        }
+        {
+            PerformanceProfiler::ScopedTimer timer{profiler, PerformanceProfiler::Section::EqProcess};
+            eqCurve.processBlock(buffer);
+        }
     }
 
     outputGain.setGainDecibels(outputGainDb);
@@ -364,6 +402,7 @@ juce::AudioProcessorEditor* ResonanceEQAudioProcessor::createEditor()
 
 void ResonanceEQAudioProcessor::getStateInformation(juce::MemoryBlock& destData)
 {
+    PerformanceProfiler::ScopedTimer timer{profiler, PerformanceProfiler::Section::GetStateInformation};
     try
     {
         const auto state = parameters.copyState();
@@ -391,6 +430,7 @@ void ResonanceEQAudioProcessor::getStateInformation(juce::MemoryBlock& destData)
 
 void ResonanceEQAudioProcessor::setStateInformation(const void* data, const int sizeInBytes)
 {
+    PerformanceProfiler::ScopedTimer timer{profiler, PerformanceProfiler::Section::SetStateInformation};
     try
     {
         if (const auto xml = getXmlFromBinary(data, sizeInBytes))
@@ -431,6 +471,64 @@ void ResonanceEQAudioProcessor::setLastError(const juce::String& message)
 {
     const juce::ScopedLock lock(lastErrorLock);
     lastErrorMessage = message;
+}
+
+ResonanceEQAudioProcessor::ProfilingReport ResonanceEQAudioProcessor::getProfilingReport() const noexcept
+{
+    ProfilingReport report;
+    report.sampleRate = static_cast<int>(currentSampleRate.load(std::memory_order_relaxed));
+    report.blockSize = currentBlockSize.load(std::memory_order_relaxed);
+    report.blockDurationUs = (report.sampleRate > 0 && report.blockSize > 0)
+                                   ? (static_cast<double>(report.blockSize) * 1'000'000.0 / report.sampleRate)
+                                   : 0.0;
+
+    report.snapshots = profiler.getSnapshots();
+    const auto& processSnapshot = report.snapshots[static_cast<size_t>(PerformanceProfiler::Section::ProcessBlock)];
+    report.processBlockCalls = processSnapshot.callCount;
+    report.averageProcessBlockUs = processSnapshot.averageTimeUs;
+    report.maxProcessBlockNs = processSnapshot.maxTimeNs;
+
+    if (report.blockDurationUs > 0.0)
+    {
+        report.averageLoadRatioPct = (report.averageProcessBlockUs / report.blockDurationUs) * 100.0;
+        report.peakLoadRatioPct = (static_cast<double>(report.maxProcessBlockNs) / 1000.0 / report.blockDurationUs) * 100.0;
+    }
+
+    return report;
+}
+
+juce::String ResonanceEQAudioProcessor::getProfilingSummary() const
+{
+    const auto report = getProfilingReport();
+    juce::String summary;
+
+    summary << "Profiling Summary\n";
+    summary << "=================\n";
+    summary << "Sample rate: " << report.sampleRate << " Hz\n";
+    summary << "Block size: " << report.blockSize << " samples\n";
+    summary << "Block budget: " << report.blockDurationUs << " us\n";
+    summary << "ProcessBlock calls: " << static_cast<int64_t>(report.processBlockCalls) << "\n";
+    summary << "ProcessBlock average: " << report.averageProcessBlockUs << " us\n";
+    summary << "ProcessBlock maximum: " << static_cast<int64_t>(report.maxProcessBlockNs) << " ns\n";
+    summary << "Average load ratio: " << report.averageLoadRatioPct << " %\n";
+    summary << "Peak load ratio: " << report.peakLoadRatioPct << " %\n";
+    summary << "\n";
+
+    for (const auto& snapshot : report.snapshots)
+    {
+        summary << PerformanceProfiler::getSectionName(snapshot.section) << ":\n";
+        summary << "  Calls: " << static_cast<int64_t>(snapshot.callCount) << "\n";
+        summary << "  Total: " << static_cast<int64_t>(snapshot.totalTimeNs) << " ns\n";
+        summary << "  Avg: " << snapshot.averageTimeUs << " us\n";
+        summary << "  Max: " << static_cast<int64_t>(snapshot.maxTimeNs) << " ns\n";
+    }
+
+    return summary;
+}
+
+void ResonanceEQAudioProcessor::resetProfilingMetrics() noexcept
+{
+    profiler.reset();
 }
 
 juce::AudioProcessorValueTreeState::ParameterLayout
@@ -567,24 +665,21 @@ float ResonanceEQAudioProcessor::readBpm() const
 
 void ResonanceEQAudioProcessor::updateEqTargetsFromParameters()
 {
+    PerformanceProfiler::ScopedTimer timer{profiler, PerformanceProfiler::Section::UpdateEqTargets};
+
     for (auto band = 0; band < EqCurve::numBands; ++band)
     {
-        const auto idx = juce::String(band + 1);
-        const auto freqParamName = "eq" + idx + "Freq";
-        const auto gainParamName = "eq" + idx + "Gain";
-        const auto qParamName = "eq" + idx + "Q";
-
         float freq = 1000.0f; // default
-        if (auto* param = parameters.getRawParameterValue(freqParamName))
-            freq = param->load();
+        if (eqFreqParameters[band])
+            freq = eqFreqParameters[band]->load();
 
         float gain = 0.0f;
-        if (auto* param = parameters.getRawParameterValue(gainParamName))
-            gain = param->load();
+        if (eqGainParameters[band])
+            gain = eqGainParameters[band]->load();
 
         float qValue = 1.0f;
-        if (auto* param = parameters.getRawParameterValue(qParamName))
-            qValue = param->load();
+        if (eqQParameters[band])
+            qValue = eqQParameters[band]->load();
 
         eqCurve.setBandTarget(band, freq, gain, qValue);
     }
