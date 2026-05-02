@@ -9,9 +9,9 @@ namespace
 constexpr float minFreq = 20.0f;
 constexpr float maxFreq = 20000.0f;
 constexpr float minQ = 0.9f;
-constexpr float maxQ = 14.0f;
+constexpr float maxQ = 30.0f;
 constexpr float minGainDb = 0.0f;
-constexpr float maxGainDbAbsolute = 12.0f;
+constexpr float maxGainDbAbsolute = 18.0f;
 } // namespace
 
 void ResonanceEngine::prepare(const juce::dsp::ProcessSpec& spec)
@@ -20,14 +20,14 @@ void ResonanceEngine::prepare(const juce::dsp::ProcessSpec& spec)
 
     for (auto i = 0; i < maxResonances; ++i)
     {
-        freqSmoothed[i].reset(sampleRate, 0.22);
-        gainDbSmoothed[i].reset(sampleRate, 0.18);
-        qSmoothed[i].reset(sampleRate, 0.22);
+        freqSmoothed[i].reset(sampleRate, 0.16);
+        gainDbSmoothed[i].reset(sampleRate, 0.12);
+        qSmoothed[i].reset(sampleRate, 0.14);
 
-        freqSmoothed[i].setCurrentAndTargetValue(300.0f + 40.0f * static_cast<float>(i));
+        freqSmoothed[i].setCurrentAndTargetValue(300.0f + 30.0f * static_cast<float>(i));
         gainDbSmoothed[i].setCurrentAndTargetValue(0.0f);
         qSmoothed[i].setCurrentAndTargetValue(1.0f);
-        lastFreqHz[i] = 300.0f + 40.0f * static_cast<float>(i);
+        lastFreqHz[i] = 300.0f + 30.0f * static_cast<float>(i);
 
         filters[i].prepare(spec);
         *filters[i].state =
@@ -35,6 +35,7 @@ void ResonanceEngine::prepare(const juce::dsp::ProcessSpec& spec)
     }
 
     samplesUntilTick = 0;
+    publishVisualState();
 }
 
 void ResonanceEngine::reset()
@@ -44,6 +45,7 @@ void ResonanceEngine::reset()
 
     initialized.fill(false);
     samplesUntilTick = 0;
+    publishVisualState();
 }
 
 void ResonanceEngine::setSeed(const int newSeed)
@@ -59,6 +61,16 @@ void ResonanceEngine::setSeed(const int newSeed)
     samplesUntilTick = 0;
 }
 
+void ResonanceEngine::forceRegenerateTargets()
+{
+    initialized.fill(false);
+    triggerNewTargets();
+
+    const auto rateHz = juce::jlimit(0.05f, 20.0f, computeRateHz());
+    samplesUntilTick = juce::jmax(1, static_cast<int>(std::round(sampleRate / rateHz)));
+    publishVisualState();
+}
+
 void ResonanceEngine::setParameters(const Params& newParams)
 {
     params = newParams;
@@ -67,11 +79,7 @@ void ResonanceEngine::setParameters(const Params& newParams)
         hreq::util::smoothstep(hreq::util::clampFloat(params.randomness, 0.0f, 1.0f));
 
     const auto countMaxClamped = hreq::util::clampInt(params.countMax, 1, maxResonances);
-    const auto countMinFixed = (countMaxClamped < 2 ? 1 : 2);
-    effectiveCount = juce::jlimit(1, maxResonances,
-                                  static_cast<int>(std::round(hreq::util::lerp(
-                                      static_cast<float>(countMinFixed),
-                                      static_cast<float>(countMaxClamped), shapedRandomness))));
+    effectiveCount = countMaxClamped;
 
     effectiveQ = hreq::util::clampFloat(
         hreq::util::logLerp(minQ, hreq::util::clampFloat(params.qMax, minQ, maxQ),
@@ -92,6 +100,7 @@ void ResonanceEngine::processBlock(juce::AudioBuffer<float>& buffer)
 
     updateControlTicks(numSamples);
     updateCoefficients(numSamples);
+    publishVisualState();
 
     juce::dsp::AudioBlock<float> block(buffer);
     for (auto& filter : filters)
@@ -122,10 +131,18 @@ void ResonanceEngine::updateControlTicks(const int numSamples)
 
 void ResonanceEngine::triggerNewTargets()
 {
-    const auto maxBoostDb =
-        juce::jlimit(3.0f, 9.0f, hreq::util::lerp(3.0f, 9.0f, shapedRandomness));
+    const auto normalBoostDb = hreq::util::lerp(8.0f, 12.0f, shapedRandomness);
+    const auto extremeBoostDb = hreq::util::lerp(12.0f, 18.0f, juce::jlimit(0.0f, 1.0f, (shapedRandomness - 0.65f) / 0.35f));
+    const auto maxBoostDb = shapedRandomness > 0.65f ? extremeBoostDb : normalBoostDb;
     const auto jumpOctaves =
-        hreq::util::lerp(0.06f, 2.3f, shapedRandomness) * juce::jmax(0.1f, effectiveMotion);
+        hreq::util::lerp(0.03f, 2.8f, shapedRandomness) * juce::jmax(0.05f, effectiveMotion);
+    const auto jumpChance = hreq::util::lerp(0.02f, 0.36f, shapedRandomness) * juce::jmax(0.1f, effectiveMotion);
+
+    const bool makeHarmonics = nextRandom01() < 0.38f;
+    const bool makeCluster = nextRandom01() < 0.32f;
+    const float fundamental = hreq::util::logLerp(80.0f, 600.0f, nextRandom01());
+    const float clusterCentre = randomLogFrequency(180.0f, 8000.0f);
+    int generated = 0;
 
     for (auto i = 0; i < maxResonances; ++i)
     {
@@ -133,6 +150,7 @@ void ResonanceEngine::triggerNewTargets()
         {
             gainDbSmoothed[i].setTargetValue(0.0f);
             qSmoothed[i].setTargetValue(1.0f);
+            visualActive[static_cast<size_t>(i)].store(false, std::memory_order_relaxed);
             continue;
         }
 
@@ -140,13 +158,50 @@ void ResonanceEngine::triggerNewTargets()
 
         if (!initialized[i])
         {
-            frequency = hreq::util::logLerp(minFreq, maxFreq, nextRandom01());
+            bool assigned = false;
+
+            if (makeHarmonics && generated < 4)
+            {
+                const auto partial = generated + 1;
+                const auto harmonic = fundamental * static_cast<float>(partial);
+                if (harmonic <= maxFreq)
+                {
+                    frequency = harmonic * hreq::util::lerp(0.985f, 1.015f, nextRandom01());
+                    assigned = true;
+                }
+            }
+
+            if (!assigned && makeCluster && generated >= 4 && generated < 8)
+            {
+                const auto spread = hreq::util::lerp(-0.16f, 0.16f, nextRandom01());
+                frequency = clusterCentre * std::pow(2.0f, spread);
+                assigned = true;
+            }
+
+            for (int attempt = 0; !assigned && attempt < 18; ++attempt)
+            {
+                const auto candidate = randomLogFrequency();
+                if (isFarEnoughFromExisting(candidate, i, 0.035f))
+                {
+                    frequency = candidate;
+                    assigned = true;
+                }
+            }
+
+            if (!assigned)
+                frequency = randomLogFrequency();
+
             initialized[i] = true;
         }
-        else if (effectiveMotion > 0.0001f)
+        else if (effectiveMotion > 0.0001f && nextRandom01() < jumpChance)
         {
             const auto octaveOffset = hreq::util::lerp(-jumpOctaves, jumpOctaves, nextRandom01());
             frequency *= std::pow(2.0f, octaveOffset);
+        }
+        else if (effectiveMotion > 0.0001f)
+        {
+            const auto drift = motionDirection[i] * motionSpeed[i] * hreq::util::lerp(0.15f, 1.0f, shapedRandomness);
+            frequency *= std::pow(2.0f, drift);
         }
 
         frequency = hreq::util::clampFloat(frequency, minFreq, maxFreq);
@@ -155,15 +210,38 @@ void ResonanceEngine::triggerNewTargets()
         auto localMaxBoost = juce::jmin(maxBoostDb, maxGainDbAbsolute);
 
         if (frequency > 2000.0f && frequency < 6000.0f)
-            localMaxBoost *= 0.6f;
+            localMaxBoost *= 0.72f;
 
+        const auto rank = (float)i / (float)juce::jmax(1, effectiveCount - 1);
+        float gainFloor = 0.08f;
+        float gainCeiling = 0.38f;
+        if (i < 3)
+        {
+            gainFloor = 0.72f;
+            gainCeiling = 1.0f;
+        }
+        else if (rank < 0.55f)
+        {
+            gainFloor = 0.34f;
+            gainCeiling = 0.72f;
+        }
+
+        const auto intensity = hreq::util::lerp(gainFloor, gainCeiling, std::pow(nextRandom01(), 0.65f));
+        const auto gainMotion = hreq::util::lerp(-3.5f, 3.5f, nextRandom01()) * effectiveMotion * shapedRandomness;
         const auto gainTarget =
-            hreq::util::clampFloat(localMaxBoost * nextRandom01(), minGainDb, maxGainDbAbsolute);
-        const auto qVariation = hreq::util::lerp(0.9f, 1.15f, nextRandom01());
+            hreq::util::clampFloat(localMaxBoost * intensity + gainMotion * gainDirection[i], minGainDb, maxGainDbAbsolute);
+        const auto qVariation = hreq::util::lerp(0.65f, 1.55f, nextRandom01() * shapedRandomness + 0.2f);
+        const auto qMotion = 1.0f + qDirection[i] * effectiveMotion * shapedRandomness * hreq::util::lerp(0.0f, 0.25f, nextRandom01());
 
         freqSmoothed[i].setTargetValue(frequency);
         gainDbSmoothed[i].setTargetValue(gainTarget);
-        qSmoothed[i].setTargetValue(hreq::util::clampFloat(effectiveQ * qVariation, minQ, maxQ));
+        qSmoothed[i].setTargetValue(hreq::util::clampFloat(effectiveQ * qVariation * qMotion, minQ, maxQ));
+
+        motionDirection[i] = nextRandom01() < 0.5f ? -1.0f : 1.0f;
+        gainDirection[i] = nextRandom01() < 0.5f ? -1.0f : 1.0f;
+        qDirection[i] = nextRandom01() < 0.5f ? -1.0f : 1.0f;
+        motionSpeed[i] = hreq::util::lerp(0.002f, 0.028f, nextRandom01());
+        ++generated;
     }
 }
 
@@ -180,6 +258,33 @@ void ResonanceEngine::updateCoefficients(const int numSamples)
         *filters[i].state = *juce::dsp::IIR::Coefficients<float>::makePeakFilter(
             sampleRate, frequency, qValue, juce::Decibels::decibelsToGain(gainDb));
     }
+}
+
+void ResonanceEngine::publishVisualState() noexcept
+{
+    for (auto i = 0; i < maxResonances; ++i)
+    {
+        visualFrequencyHz[static_cast<size_t>(i)].store(lastFreqHz[static_cast<size_t>(i)], std::memory_order_relaxed);
+        visualGainDb[static_cast<size_t>(i)].store(gainDbSmoothed[static_cast<size_t>(i)].getTargetValue(), std::memory_order_relaxed);
+        visualQ[static_cast<size_t>(i)].store(qSmoothed[static_cast<size_t>(i)].getTargetValue(), std::memory_order_relaxed);
+        visualActive[static_cast<size_t>(i)].store(i < effectiveCount, std::memory_order_relaxed);
+    }
+}
+
+std::array<ResonanceEngine::ResonanceVisualState, ResonanceEngine::maxResonances>
+ResonanceEngine::getVisualState() const noexcept
+{
+    std::array<ResonanceVisualState, maxResonances> result{};
+
+    for (auto i = 0; i < maxResonances; ++i)
+    {
+        result[static_cast<size_t>(i)].frequencyHz = visualFrequencyHz[static_cast<size_t>(i)].load(std::memory_order_relaxed);
+        result[static_cast<size_t>(i)].gainDb = visualGainDb[static_cast<size_t>(i)].load(std::memory_order_relaxed);
+        result[static_cast<size_t>(i)].q = visualQ[static_cast<size_t>(i)].load(std::memory_order_relaxed);
+        result[static_cast<size_t>(i)].active = visualActive[static_cast<size_t>(i)].load(std::memory_order_relaxed);
+    }
+
+    return result;
 }
 
 float ResonanceEngine::computeRateHz() const
@@ -238,4 +343,25 @@ float ResonanceEngine::noteToSeconds(const int noteIndex, const float bpm) const
 float ResonanceEngine::nextRandom01()
 {
     return std::uniform_real_distribution<float>(0.0f, 1.0f)(prng);
+}
+
+float ResonanceEngine::randomLogFrequency(float minHz, float maxHz)
+{
+    return hreq::util::logLerp(juce::jlimit(minFreq, maxFreq, minHz),
+                               juce::jlimit(minFreq, maxFreq, maxHz),
+                               nextRandom01());
+}
+
+bool ResonanceEngine::isFarEnoughFromExisting(const float frequency, const int count, const float minLogDistance) const noexcept
+{
+    const auto logFrequency = std::log10(juce::jlimit(minFreq, maxFreq, frequency));
+
+    for (auto i = 0; i < count; ++i)
+    {
+        const auto other = std::log10(juce::jlimit(minFreq, maxFreq, lastFreqHz[static_cast<size_t>(i)]));
+        if (std::abs(logFrequency - other) < minLogDistance)
+            return false;
+    }
+
+    return true;
 }

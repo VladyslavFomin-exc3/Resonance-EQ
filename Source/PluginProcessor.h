@@ -126,6 +126,12 @@ class ResonanceEQAudioProcessor final : public juce::AudioProcessor,
     /** @brief Get user-friendly last non-realtime error status. */
     juce::String getLastErrorMessage() const;
 
+    struct Preset
+    {
+        juce::String name;
+        juce::ValueTree state;
+    };
+
     struct ProfilingReport
     {
         int sampleRate = 44100;
@@ -160,6 +166,27 @@ class ResonanceEQAudioProcessor final : public juce::AudioProcessor,
      */
     static juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout();
 
+    /** @brief Expose the plugin parameter state to the editor. */
+    juce::AudioProcessorValueTreeState& getAPVTS() noexcept { return parameters; }
+
+    const std::vector<Preset>& getPresets() const noexcept { return presets; }
+    void loadPreset(int presetIndex);
+    int getSelectedPresetIndex() const noexcept;
+
+    std::array<ResonanceEngine::ResonanceVisualState, ResonanceEngine::maxResonances>
+    getResonanceVisualState() const noexcept;
+
+    /** @brief Apply deterministic resonance macro values from a visible seed. */
+    void applySeedRandomization(int seed);
+
+    /** @brief Generate and publish a new seed; seed listeners perform the randomization. */
+    void rerollSeed();
+
+    /** @brief Copy analyzer samples from the audio-thread ring buffer. */
+    int pullAnalyzerSamples(float* destination, int maxSamples) noexcept;
+
+    double getAnalyzerSampleRate() const noexcept { return currentSampleRate.load(std::memory_order_relaxed); }
+
     /** @brief Parameter storage (ValueTree state). */
     juce::AudioProcessorValueTreeState parameters;
 
@@ -186,8 +213,23 @@ class ResonanceEQAudioProcessor final : public juce::AudioProcessor,
     /** @brief Update each EQ band target from parameters. */
     void updateEqTargetsFromParameters();
 
+    void pushAnalyzerSamples(const juce::AudioBuffer<float>& buffer) noexcept;
+
+    void processSaturation(juce::AudioBuffer<float>& buffer, float amount, float randomness) noexcept;
+
+    void initialiseFactoryPresets();
+
+    static constexpr int analyzerFifoSize = 16384;
+    std::array<float, analyzerFifoSize> analyzerFifo{};
+    std::atomic<int> analyzerWriteIndex{0};
+    std::atomic<int> analyzerReadIndex{0};
+
     std::atomic<bool> rerollPending{false};
     bool rerollButtonWasDown = false;
+    std::atomic<bool> resonanceRegeneratePending{false};
+    std::atomic<bool> seedRandomizationPending{false};
+    std::atomic<int> pendingSeedRandomization{12345};
+    std::atomic<bool> isApplyingSeedRandomization{false};
 
     std::atomic<bool> realtimeErrorPending{false};
     std::atomic<int> realtimeErrorCode{0};
@@ -221,6 +263,7 @@ class ResonanceEQAudioProcessor final : public juce::AudioProcessor,
     std::atomic<float>* freeHzMaxParameter = nullptr;
     std::atomic<float>* seedParameter = nullptr;
     std::atomic<float>* rerollParameter = nullptr;
+    std::atomic<float>* saturationAmountParameter = nullptr;
 
     std::array<std::atomic<float>*, EqCurve::numBands> eqFreqParameters{};
     std::array<std::atomic<float>*, EqCurve::numBands> eqGainParameters{};
@@ -234,6 +277,8 @@ class ResonanceEQAudioProcessor final : public juce::AudioProcessor,
 
     juce::dsp::Gain<float> outputGain;
     juce::dsp::DryWetMixer<float> dryWetMixer;
+
+    std::vector<Preset> presets;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(ResonanceEQAudioProcessor)
 };

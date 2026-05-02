@@ -45,6 +45,12 @@ target_sources(ResonanceEQ
         Source/PluginProcessor.cpp
         Source/PluginEditor.h
         Source/PluginEditor.cpp
+        Source/UI/CustomLookAndFeel.h
+        Source/UI/CustomLookAndFeel.cpp
+        Source/UI/EqDisplayComponent.h
+        Source/UI/EqDisplayComponent.cpp
+        Source/UI/ResonancePanelComponent.h
+        Source/UI/ResonancePanelComponent.cpp
         Source/AppLogger.h
         Source/AppLogger.cpp
         Source/Dsp/Utilities.h

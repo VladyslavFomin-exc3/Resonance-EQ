@@ -8,7 +8,7 @@ constexpr float minFreq = 20.0f;
 constexpr float maxFreq = 20000.0f;
 constexpr float minQ = 0.3f;
 constexpr float maxQ = 6.0f;
-constexpr float minGainDb = -12.0f;
+constexpr float minGainDb = -24.0f;
 constexpr float maxGainDb = 12.0f;
 } // namespace
 

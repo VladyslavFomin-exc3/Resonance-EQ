@@ -14,7 +14,15 @@
 class ResonanceEngine
 {
   public:
-    static constexpr int maxResonances = 12;
+    static constexpr int maxResonances = 24;
+
+    struct ResonanceVisualState
+    {
+        float frequencyHz = 20.0f;
+        float gainDb = 0.0f;
+        float q = 1.0f;
+        bool active = false;
+    };
 
     /**
      * @brief Container for real-time resonance control settings.
@@ -48,6 +56,9 @@ class ResonanceEngine
      */
     void setSeed(const int newSeed);
 
+    /** @brief Immediately generate a fresh set of resonance targets from the current seed and params. */
+    void forceRegenerateTargets();
+
     /**
      * @brief Update runtime parameters in the engine.
      * @param newParams Resonance parameters structure.
@@ -60,6 +71,8 @@ class ResonanceEngine
      */
     void processBlock(juce::AudioBuffer<float>& buffer);
 
+    std::array<ResonanceVisualState, maxResonances> getVisualState() const noexcept;
+
   private:
     using Filter = juce::dsp::ProcessorDuplicator<juce::dsp::IIR::Filter<float>,
                                                   juce::dsp::IIR::Coefficients<float>>;
@@ -68,10 +81,13 @@ class ResonanceEngine
     void updateControlTicks(int numSamples);
     void triggerNewTargets();
     void updateCoefficients(int numSamples);
+    void publishVisualState() noexcept;
 
     float computeRateHz() const;
     float noteToSeconds(int noteIndex, float bpm) const;
     float nextRandom01();
+    float randomLogFrequency(float minHz = 20.0f, float maxHz = 20000.0f);
+    bool isFarEnoughFromExisting(float frequency, int count, float minLogDistance) const noexcept;
 
     double sampleRate = 44100.0;
 
@@ -88,6 +104,15 @@ class ResonanceEngine
 
     std::array<bool, maxResonances> initialized{};
     std::array<float, maxResonances> lastFreqHz{};
+    std::array<float, maxResonances> motionDirection{};
+    std::array<float, maxResonances> gainDirection{};
+    std::array<float, maxResonances> qDirection{};
+    std::array<float, maxResonances> motionSpeed{};
+
+    std::array<std::atomic<float>, maxResonances> visualFrequencyHz{};
+    std::array<std::atomic<float>, maxResonances> visualGainDb{};
+    std::array<std::atomic<float>, maxResonances> visualQ{};
+    std::array<std::atomic<bool>, maxResonances> visualActive{};
 
     std::array<Filter, maxResonances> filters;
     std::array<juce::SmoothedValue<float, juce::ValueSmoothingTypes::Multiplicative>, maxResonances>
